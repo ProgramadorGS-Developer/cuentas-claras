@@ -5,6 +5,8 @@ export type RootStackParamList = {
   Tabs: undefined;
   ItemDetail: { itemId: string };
   NewSession: undefined;
+  History: undefined;
+  Settings: undefined;
 };
 
 export type TabsParamList = {
