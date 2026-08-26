@@ -12,6 +12,16 @@ usersRouter.post("/sessions/:sessionId/participants", (req, res) => {
   if (!name || name.trim().length < 2) {
     return res.status(400).json({ error: "El nombre es obligatorio" });
   }
+// Validar que la sesión exista y que no esté cerrada. Pablo Casi
+  const session = db.prepare("SELECT id, closed_at FROM sessions WHERE id = ?").get(sessionId) as
+    | { id: string; closed_at: string | null }
+    | undefined;
+  if (!session) {
+    return res.status(404).json({ error: "Sesión no encontrada" });
+  }
+  if (session.closed_at) {
+    return res.status(409).json({ error: "La sesión ya está cerrada" });
+  }
 
   const id = uuid();
   const joinedAt = new Date().toISOString();
