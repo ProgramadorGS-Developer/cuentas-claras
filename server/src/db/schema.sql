@@ -1,5 +1,5 @@
 -- Esquema del backend (fuente de verdad compartida por todos los dispositivos).
--- Motor: SQLite (better-sqlite3). Ver docs/05-modelo-de-datos.md para el diccionario de datos completo
+-- Motor: SQLite (node:sqlite). Ver docs/05-modelo-de-datos.md para el diccionario de datos completo
 -- y la justificación de por qué el servidor -y no solo el cliente- necesita su propia SQLite.
 
 CREATE TABLE IF NOT EXISTS sessions (
