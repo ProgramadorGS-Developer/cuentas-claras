@@ -1,6 +1,6 @@
 # 11. Cambios de código realizados para poder desplegar el backend
 
-Este documento registra dos cambios puntuales hechos en `server/` el
+Este documento registra tres cambios puntuales hechos en `server/` el
 2026-09-01, durante el trabajo de selección y configuración de hosting
 (alcance: 1.1 "Selección y configuración del alojamiento" del EDT). No
 modifican ninguna regla de negocio ni el modelo de datos: son ajustes de
@@ -136,9 +136,23 @@ Código anterior:
 "build": "tsc -p tsconfig.json",
 ```
 
-Código nuevo:
+Código nuevo (primera versión, ver Cambio 3 para el ajuste final):
 ```json
 "build": "tsc -p tsconfig.json && node scripts/copy-schema.js",
+```
+
+## Cambio 3 — Invocar `tsc` directamente con `node`, no vía su `.cmd`
+
+**Archivo:** `server/package.json` (script `build`)
+
+Código anterior:
+```json
+"build": "tsc -p tsconfig.json && node scripts/copy-schema.js",
+```
+
+Código nuevo:
+```json
+"build": "node node_modules/typescript/bin/tsc -p tsconfig.json && node scripts/copy-schema.js",
 ```
 
 ---
@@ -213,14 +227,41 @@ con el cambio 1.
 **Solución:** un paso explícito de copia (`server/scripts/copy-schema.js`)
 después de `tsc`, ya que el compilador no lo hace por diseño.
 
+### Limitación 3 — La misma política de grupo también bloqueaba `tsc` (encontrada en MonsterASP.net, segundo intento)
+
+Con los cambios 1 y 2 ya subidos, se reintentó el deploy en MonsterASP.net.
+`npm install` esta vez funcionó sin problema (ya no intenta compilar nada
+nativo), pero `npm run build` falló con el mismo mensaje que había dado
+`node-gyp`:
+
+```
+Running: npm run build
+> tsc -p tsconfig.json && node scripts/copy-schema.js
+This program is blocked by group policy. For more information, contact your system administrator.
+npm run build failed (exit=1), site not changed.
+```
+
+Causa: en Windows, `tsc` no se ejecuta directo — el script `.bin/tsc.cmd`
+que genera `npm` es en sí mismo un programa separado (un `.cmd`), y la
+política de grupo del hosting bloquea la ejecución de programas externos
+así, igual que había bloqueado `node-gyp`. En cambio, `node
+scripts/copy-schema.js` sí corrió bien en el intento anterior, porque ahí
+el único programa que se ejecuta es `node.exe` (ya permitido).
+
+**Solución:** invocar el compilador de TypeScript directamente con `node`
+(`node node_modules/typescript/bin/tsc ...`) en vez de a través de su
+atajo `.cmd` — mismo compilador, mismo resultado, pero sin que Windows
+tenga que lanzar un programa externo adicional.
+
 ## Qué se verificó localmente antes de dar esto por resuelto
 
 - `npm install` en `server/`: instala sin intentar compilar nada nativo
-- `npm run build`: compila y genera `dist/db/schema.sql` correctamente
+- `npm run build` (con el `tsc` invocado vía `node`, cambio 3 incluido):
+  compila y genera `dist/db/schema.sql` correctamente
 - Arranque manual de `node dist/index.js`: conecta a la base, aplica el
   schema y responde a pedidos HTTP sin errores
-- `npm test`: 8/8 tests pasan igual que antes del cambio
+- `npm test`: 8/8 tests pasan igual que antes de los tres cambios
 
-Pendiente: repetir el intento de deploy (MonsterASP.net o Railway) con
-estos cambios ya subidos a la rama `production`, para confirmar que
-resuelven el problema también en el entorno real del proveedor.
+Pendiente: repetir el intento de deploy en MonsterASP.net con los tres
+cambios ya subidos a la rama `production`, para confirmar que resuelven
+el problema también en el entorno real del proveedor.
