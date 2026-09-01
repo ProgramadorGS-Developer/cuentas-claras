@@ -5,13 +5,12 @@
   "main": "dist/index.js",
   "scripts": {
     "dev": "tsx watch src/index.ts",
-    "build": "tsc -p tsconfig.json",
+    "build": "tsc -p tsconfig.json && node scripts/copy-schema.js",
     "start": "node dist/index.js",
     "migrate": "tsx src/db/migrate.ts",
     "test": "jest"
   },
   "dependencies": {
-    "better-sqlite3": "^13.0.3",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
@@ -20,12 +19,11 @@
     "uuid": "^9.0.1"
   },
   "devDependencies": {
-    "@types/better-sqlite3": "^9.6.0",
     "@types/cors": "^2.8.17",
     "@types/express": "^4.17.21",
     "@types/jest": "^30.0.0",
     "@types/multer": "^1.4.11",
-    "@types/node": "^20.14.2",
+    "@types/node": "^22.10.0",
     "@types/supertest": "^7.2.1",
     "@types/uuid": "^9.0.8",
     "jest": "^29.7.0",
