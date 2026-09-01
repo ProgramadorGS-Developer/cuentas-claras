@@ -1,12 +1,17 @@
 # 11. Cambios de código realizados para poder desplegar el backend
 
-Este documento registra tres cambios puntuales hechos en `server/` el
-2026-09-01, durante el trabajo de selección y configuración de hosting
-(alcance: 1.1 "Selección y configuración del alojamiento" del EDT). No
-modifican ninguna regla de negocio ni el modelo de datos: son ajustes de
-infraestructura de build/runtime necesarios para que el backend arranque
-en un proveedor de hosting real, algo que hasta ahora nunca se había
-probado (solo se había corrido en local con `npm run dev`).
+Este documento registra los cambios hechos el 2026-09-01, durante el
+trabajo de selección y configuración de hosting (alcance: 1.1 "Selección
+y configuración del alojamiento" del EDT), para poder desplegar el
+backend en MonsterASP.net y conectar la app móvil a ese backend ya en
+internet. No modifican ninguna regla de negocio ni el modelo de datos:
+son ajustes de infraestructura de build/runtime/configuración, necesarios
+porque hasta ahora el proyecto solo se había corrido en local
+(`npm run dev` en `server/`, la app apuntando a `localhost`).
+
+Los cambios 1 a 3 son sobre el backend (`server/`). El cambio 4 es sobre
+la app móvil (`mobile/`), para que deje de apuntar a `localhost` y hable
+con el backend real, y para poder generar un `.apk` instalable.
 
 ## Cambio 1 — Driver de SQLite: `better-sqlite3` → `node:sqlite`
 
@@ -253,7 +258,7 @@ el único programa que se ejecuta es `node.exe` (ya permitido).
 atajo `.cmd` — mismo compilador, mismo resultado, pero sin que Windows
 tenga que lanzar un programa externo adicional.
 
-## Qué se verificó localmente antes de dar esto por resuelto
+## Qué se verificó localmente antes de dar esto por resuelto (cambios 1-3)
 
 - `npm install` en `server/`: instala sin intentar compilar nada nativo
 - `npm run build` (con el `tsc` invocado vía `node`, cambio 3 incluido):
@@ -261,7 +266,119 @@ tenga que lanzar un programa externo adicional.
 - Arranque manual de `node dist/index.js`: conecta a la base, aplica el
   schema y responde a pedidos HTTP sin errores
 - `npm test`: 8/8 tests pasan igual que antes de los tres cambios
+- Deploy real en MonsterASP.net (Git deploy, tipo "Node.js SSR", rama
+  `production`): build exitoso, sitio publicado y respondiendo — se
+  confirmó con `curl https://cuentasclaras.runasp.net/sessions` → `[]`
+  (JSON válido, conectado a la base real)
 
-Pendiente: repetir el intento de deploy en MonsterASP.net con los tres
-cambios ya subidos a la rama `production`, para confirmar que resuelven
-el problema también en el entorno real del proveedor.
+Nota aparte: el certificado HTTPS del sitio (Let's Encrypt, gestionado
+por MonsterASP.net) tardó unos minutos en propagarse después de
+activarlo — durante ese lapso `https://` daba `ERR_CONNECTION_RESET`
+mientras que `http://` ya respondía bien. No fue necesario ningún cambio
+de código para eso, solo esperar a que terminara de activarse.
+
+## Cambio 4 — Apuntar la app móvil al backend real y generar el `.apk`
+
+Con el backend ya funcionando en MonsterASP.net, faltaba la otra mitad:
+que la app móvil (`mobile/`) dejara de apuntar a `localhost` (solo servía
+para probar en la misma red que la compu del desarrollador) y hablara
+con el backend público, y generar un instalable para probarla en un
+celular real.
+
+**Archivo:** `mobile/app.json`
+
+Código anterior (fragmento relevante):
+```json
+{
+  "expo": {
+    "name": "CuentasClaras",
+    "slug": "cuentas-claras",
+    ...
+    "extra": {
+      "apiUrl": "http://localhost:3000",
+      "socketUrl": "http://localhost:3000"
+    }
+  }
+}
+```
+
+Código nuevo:
+```json
+{
+  "expo": {
+    "name": "CuentasClaras",
+    "slug": "cuentas-claras",
+    "owner": "cuentasclaras",
+    ...
+    "extra": {
+      "apiUrl": "https://cuentasclaras.runasp.net",
+      "socketUrl": "https://cuentasclaras.runasp.net",
+      "eas": {
+        "projectId": "11d009bc-4a05-4ca8-b1b3-0102e9d55458"
+      }
+    }
+  }
+}
+```
+
+Tres cambios distintos en el mismo archivo:
+- `extra.apiUrl` / `extra.socketUrl`: ahora apuntan al backend real en
+  MonsterASP.net, en `https://` (nunca `http://` — las apps de Android
+  bloquean tráfico sin cifrar por defecto desde Android 9, así que
+  `http://` directamente no habría conectado en un celular real, aunque
+  sí respondía bien probado desde una PC).
+- `owner: "cuentasclaras"`: el proyecto en Expo quedó bajo la
+  organización de equipo "cuentasclaras" (no la cuenta personal de quien
+  hizo el build), para que cualquiera del equipo pueda generar builds
+  más adelante sin depender de una persona puntual. Sin este campo, EAS
+  tira error porque no puede reconciliar la cuenta logueada con la
+  organización dueña del proyecto.
+- `extra.eas.projectId`: lo agrega automáticamente `eas build:configure`
+  al vincular el proyecto local con el proyecto creado en el panel de
+  Expo — no se tocó a mano.
+
+**Archivo nuevo:** `mobile/eas.json` (generado automáticamente por
+`eas build:configure`, define los perfiles de build — `development`,
+`preview`, `production`):
+```json
+{
+  "cli": {
+    "version": ">= 23.2.0",
+    "appVersionSource": "remote"
+  },
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal"
+    },
+    "preview": {
+      "distribution": "internal"
+    },
+    "production": {
+      "autoIncrement": true
+    }
+  },
+  "submit": {
+    "production": {}
+  }
+}
+```
+
+### Cosas encontradas en el camino (sin cambios de código, solo pasos)
+
+- `mobile/node_modules` nunca se había instalado (`npm install` recién
+  se corrió ahora en `mobile/`) — sin eso, `eas build` daba una
+  advertencia falsa de "SDK < 41" porque no podía leer la versión real
+  de Expo instalada.
+- Un primer intento de `eas build --platform android --profile preview`
+  falló por una interrupción temporal de la infraestructura de Expo
+  ("partial outage", confirmado en https://status.expo.dev/) — no
+  relacionado con este proyecto. Se resolvió solo, reintentando.
+
+**Resultado:** build de Android generado con éxito vía EAS (perfil
+`preview`), instalable directo en cualquier Android por link/QR sin pasar
+por Google Play, ya conectado al backend real desplegado en
+MonsterASP.net.
+
+Pendiente: build de iOS (`eas build --platform ios --profile preview`)
+requiere cuenta de Apple Developer, no se hizo en esta sesión.
