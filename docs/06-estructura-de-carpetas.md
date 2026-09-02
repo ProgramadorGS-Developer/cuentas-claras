@@ -18,7 +18,9 @@ cuentas-claras/
 │   ├── 07-guia-de-implementacion.md
 │   ├── 08-plan-de-pruebas.md
 │   ├── 09-despliegue.md
-│   └── 10-manuales-de-usuario.md
+│   ├── 10-manuales-de-usuario.md
+│   ├── 11-cambios-para-despliegue.md
+│   └── 12-diseno-concurrencia-de-reserva.md
 │
 ├── mobile/                        App React Native (Expo + TypeScript)
 │   ├── App.tsx                    Punto de entrada de la app
@@ -42,12 +44,12 @@ cuentas-claras/
 │       │   └── repositories/      Un repositorio por entidad (session, item, user, budget)
 │       ├── services/
 │       │   ├── api/               Cliente REST contra el backend
-│       │   ├── realtime/          Cliente Socket.IO + eventos de reserva
+│       │   ├── realtime/          Cliente Socket.IO + eventos de estado y ofrecimientos
 │       │   ├── sync/              Motor de sincronización offline-first
 │       │   ├── whatsapp/          Deep link / Share sheet
 │       │   └── media/             Cámara y subida de tickets
 │       ├── store/                 Estado global (Zustand): sesión activa, usuario, conectividad
-│       ├── hooks/                 Lógica de pantalla reutilizable (useShoppingList, useReservation...)
+│       ├── hooks/                 Lógica de pantalla reutilizable (useShoppingList, useReservation, useItemOffers...)
 │       ├── domain/                Modelos de dominio + reglas de negocio puras (balanceCalculator)
 │       ├── utils/                 Validadores, formateadores, generador de IDs
 │       └── theme/                 Colores, tipografía y espaciado centralizados (RNF-04)
@@ -63,7 +65,8 @@ cuentas-claras/
         ├── routes/                Definición de endpoints REST, agrupados por recurso
         ├── controllers/           Lógica de cada endpoint (una función por acción)
         ├── services/              Reglas de negocio reutilizables:
-        │                            - reservationQueue.service.ts → RF-08/CU-02a
+        │                            - reservation.service.ts      → RF-08 (reserva atómica)
+        │                            - itemOffer.service.ts        → RF-08a/CU-02a
         │                            - balance.service.ts          → RF-14/CU-04a
         │                            - whatsappLink.service.ts     → RF-01
         ├── sockets/               Eventos en tiempo real (Socket.IO)

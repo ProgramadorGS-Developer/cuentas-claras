@@ -89,7 +89,7 @@ documento ya redactado, no de investigación desde cero.
 #### 1.3.1.2 — Creación de la base de datos
 **Prioridad:** 🔴 Crítica
 **Descripción:** Creación del esquema SQLite del servidor (tablas
-`sessions`, `participants`, `items`, `reservation_attempts`,
+`sessions`, `participants`, `items`, `item_offers`,
 `budget_contributions`) según el diccionario de datos, con sus claves
 primarias, foráneas e índices.
 **Criterio de aceptación:** El esquema se aplica sin errores al levantar el

@@ -14,8 +14,8 @@ sessions (1) ────< items (N)
 sessions (1) ────< budget_contributions (N)
 participants (1) ─< items (N)              [items.reserved_by]
 participants (1) ─< budget_contributions (N)
-items (1) ────────< reservation_attempts (N)   [solo backend]
-participants (1) ─< reservation_attempts (N)   [solo backend]
+items (1) ────────< item_offers (N)            [solo backend]
+participants (1) ─< item_offers (N)            [solo backend]
 ```
 
 ## 5.2 Tablas
@@ -55,20 +55,29 @@ participants (1) ─< reservation_attempts (N)   [solo backend]
 | ticket_image_uri | TEXT (nullable) | URL de la foto del ticket. | RF-12 |
 | updated_at | TEXT (ISO 8601) | Última modificación (usado para sincronizar). | — |
 
-### `reservation_attempts` (solo backend)
+### `item_offers` (solo backend)
+
+Registra los ofrecimientos de traspaso de tarea (RF-08a): cuando un
+participante quiere un ítem que ya tiene otro. El **arbitraje de reserva**
+(RF-08) no usa tabla: se resuelve con un `UPDATE` condicional sobre
+`items.reserved_by` (ver `12-diseno-concurrencia-de-reserva.md`).
 
 | Campo | Tipo | Descripción | RF relacionado |
 |---|---|---|---|
-| id | TEXT (PK, UUID) | Identificador del intento. | RF-08 |
-| item_id | TEXT (FK → items.id) | Ítem en conflicto. | RF-08 |
-| participant_id | TEXT (FK → participants.id) | Quién intentó reservar. | RF-08 |
-| requested_at | TEXT (ISO 8601) | Marca de tiempo de la solicitud (define el orden de la cola). | RF-08 |
-| resolved | INTEGER (0/1) | Si ya fue resuelto (otorgado o cedido). | RF-08 |
+| id | TEXT (PK, UUID) | Identificador del ofrecimiento. | RF-08a |
+| item_id | TEXT (FK → items.id) | Ítem ofrecido. | RF-08a |
+| from_participant_id | TEXT (FK → participants.id) | Quién se ofrece a comprarlo. | RF-08a |
+| to_participant_id | TEXT (FK → participants.id) | Titular actual de la reserva. | RF-08a |
+| created_at | TEXT (ISO 8601) | Cuándo se creó el ofrecimiento. | — |
+| status | TEXT (`pendiente` \| `aceptado` \| `rechazado` \| `vencido`) | Estado del ofrecimiento. | RF-08a |
+| resolved_at | TEXT (ISO 8601, nullable) | Cuándo lo resolvió el titular. | — |
+
+Índice: `idx_item_offers_item (item_id)`.
 
 Esta tabla no tiene equivalente en el cliente: es un detalle interno del
-arbitraje de conflictos que solo le importa al backend (ver
-`reservationQueue.service.ts`), y sirve además como evidencia para el
-reporte de pruebas de estrés (EDT 1.4.3.1).
+backend. La antigua `reservation_attempts` se elimina (Fase 4 del plan);
+la evidencia de la prueba de estrés (EDT 1.4.3.1) pasa a ser el conjunto
+de respuestas HTTP 200/409 del script `stress-reserve.ts`.
 
 ### `budget_contributions`
 
