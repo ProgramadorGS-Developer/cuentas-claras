@@ -39,17 +39,20 @@ usuarios reservando el mismo ítem al mismo tiempo**.
 
 1. Levantar el backend localmente.
 2. Escribir un script (`server/scripts/stress-reserve.ts`, a crear cuando
-   se implemente esta fase) que abra N conexiones Socket.IO simultáneas y
-   dispare `reserve:attempt` sobre el mismo `itemId` en el mismo
-   milisegundo (usar `Promise.all`).
+   se implemente esta fase) que dispare N requests
+   `POST /items/:itemId/reserve` sobre el mismo `itemId` en paralelo
+   (`Promise.all`).
 3. Verificar:
+   - Exactamente **una** respuesta `200` y el resto `409` con el mismo
+     titular ganador.
    - Solo un participante queda con `item.reserved_by` seteado al final.
-   - La tabla `reservation_attempts` registra todos los intentos, sin
-     filas duplicadas ni inconsistentes.
-   - Ningún cliente recibe un estado contradictorio (ej. dos "granted"
-     para el mismo ítem).
-4. Repetir con al menos 10 usuarios simultáneos (criterio de aceptación
+   - Ningún cliente recibe un estado contradictorio vía `item:updated`.
+   - Doble `POST /items/:itemId/purchase` sobre el mismo ítem → una `200`,
+     la segunda `409` (RF-07).
+4. Repetir con al menos 10 requests simultáneos (criterio de aceptación
    original de la Tabla_yDiccionario, fila 1.4.3.1).
+
+Detalle del algoritmo y casos de borde: `12-diseno-concurrencia-de-reserva.md`.
 
 ## 8.4 Validación de criterios mobile-first y usabilidad (EDT 1.4.3.2)
 
@@ -79,8 +82,8 @@ Flujos mínimos a automatizar:
 
 ## 8.6 Checklist de aceptación final (equivalente EDT 1.4.4.1)
 
-- [ ] Los 16 requisitos funcionales (RF-01 a RF-16) tienen al menos un
-      caso de prueba manual o automatizado que los cubre.
+- [ ] Los requisitos funcionales (RF-01 a RF-16, más RF-08a) tienen al
+      menos un caso de prueba manual o automatizado que los cubre.
 - [ ] La prueba de estrés de concurrencia (8.3) pasa con 10 usuarios
       simultáneos sin estados inconsistentes.
 - [ ] La app funciona (lectura) sin conexión y sincroniza al reconectar.
