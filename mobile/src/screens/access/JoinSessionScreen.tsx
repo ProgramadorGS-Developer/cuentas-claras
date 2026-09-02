@@ -89,7 +89,7 @@ function HomeDashboard() {
   const { active, recent } = useHomeDashboard();
 
   return (
-    <SafeAreaView style={styles.screen} edges={["top"]}>
+    <SafeAreaView style={styles.screen} edges={["top", "bottom"]}>
       <AppHeader />
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
