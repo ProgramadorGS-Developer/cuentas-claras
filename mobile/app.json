@@ -2,6 +2,7 @@
   "expo": {
     "name": "CuentasClaras",
     "slug": "cuentas-claras",
+    "owner": "cuentasclaras",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -11,7 +12,9 @@
       "resizeMode": "contain",
       "backgroundColor": "#FFFFFF"
     },
-    "assetBundlePatterns": ["**/*"],
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.cuentasclaras.app"
@@ -22,11 +25,18 @@
         "backgroundColor": "#2E7D32"
       },
       "package": "com.cuentasclaras.app",
-      "permissions": ["CAMERA", "READ_EXTERNAL_STORAGE", "WRITE_EXTERNAL_STORAGE"]
+      "permissions": [
+        "CAMERA",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE"
+      ]
     },
     "extra": {
-      "apiUrl": "http://localhost:3000",
-      "socketUrl": "http://localhost:3000"
+      "apiUrl": "https://cuentasclaras.runasp.net",
+      "socketUrl": "https://cuentasclaras.runasp.net",
+      "eas": {
+        "projectId": "11d009bc-4a05-4ca8-b1b3-0102e9d55458"
+      }
     }
   }
 }
