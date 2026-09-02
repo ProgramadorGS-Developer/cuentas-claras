@@ -40,7 +40,7 @@ generalización · `«include»` = comportamiento siempre incorporado ·
 | Postcondición | El usuario queda identificado y puede operar como Usuario. |
 | Adaptación móvil | El "link" es un *deep link* (`cuentasclaras://join?token=...`) resuelto por `expo-linking`; ver `screens/access/JoinSessionScreen.tsx`. |
 
-## 3.3 CU-02 — Reservar ítem de la lista (+ CU-02a, incluido)
+## 3.3 CU-02 — Reservar ítem de la lista
 
 Es el caso de uso más distintivo: resuelve el problema original del
 proyecto (evitar compras duplicadas).
@@ -50,19 +50,23 @@ proyecto (evitar compras duplicadas).
 | Actor | Usuario |
 | RF relacionados | RF-05, RF-07, RF-08 |
 | Precondición | Usuario identificado; lista ya cargada por el Anfitrión. |
-| Flujo principal | 1) Ve la lista de pendientes. 2) Selecciona un ítem. 3) El sistema verifica que nadie más lo esté reservando en simultáneo (CU-02a). 4) Se marca como reservado, con el nombre del usuario en observaciones. |
-| A1 | El usuario quita una reserva propia → el ítem vuelve a estar disponible. |
-| Incluye | **CU-02a — Resolver conflicto de reserva simultánea**, siempre que dos o más usuarios compitan por el mismo ítem. |
+| Flujo principal | 1) Ve la lista de pendientes. 2) Selecciona un ítem. 3) El backend intenta reservarlo de forma atómica (`UPDATE ... WHERE reserved_by IS NULL`). 4) Si el ítem estaba libre, queda reservado a nombre del usuario y se difunde el nuevo estado a la sesión. |
+| A1 | El usuario quita una reserva propia → el ítem vuelve a estar disponible (RF-06). |
+| A2 | Otro usuario llegó primero → el sistema responde "ya reservado por \<nombre\>" y el usuario ve el estado actualizado. Sin cola ni modal bloqueante (ver `12-diseno-concurrencia-de-reserva.md`). |
+| Extiende (opcional) | **CU-02a — Ofrecerse a comprar un ítem reservado**, si el usuario quiere el ítem que ya tiene otro. |
 
-### CU-02a — Resolver conflicto de reserva simultánea
+### CU-02a — Ofrecerse a comprar un ítem reservado (traspaso de tarea)
 
 | Campo | Detalle |
 |---|---|
-| Precondición | Dos o más usuarios intentaron reservar el mismo ítem en un intervalo muy cercano. |
-| Flujo principal | 1) El sistema determina, por orden de llegada al servidor, quién fue primero. 2) Le avisa a ese usuario que hay competencia y le pregunta si desea insistir. 3) Confirma. 4) Se le otorga la reserva. |
-| A1 | Si el primero no insiste, se le ofrece al siguiente en la fila; si no queda nadie, el ítem queda libre. |
-| Postcondición | Un único usuario queda con la reserva, o el ítem queda libre. |
-| Adaptación móvil | Arbitrado por el backend (`server/src/services/reservationQueue.service.ts`) vía Socket.IO, porque ninguna SQLite local por sí sola puede saber lo que hace un usuario en otro teléfono (ver `04-arquitectura.md`). |
+| Actor | Usuario |
+| RF relacionados | RF-08a |
+| Precondición | El ítem está reservado por otro participante de la sesión. |
+| Flujo principal | 1) El usuario toca "Me ofrezco a comprarlo". 2) Se crea un ofrecimiento pendiente hacia el titular actual. 3) El titular recibe un aviso **no bloqueante** con tres opciones: comprarlo igual, cederlo a quien se ofreció, o liberar el ítem. 4) El titular elige. 5) Se difunde el resultado a los involucrados. |
+| A1 | El titular no responde → no pasa nada: conserva la reserva. Un ofrecimiento pendiente no bloquea la compra. |
+| A2 | El titular libera el ítem → queda disponible para todos y los ofrecimientos pendientes pasan a "vencido". |
+| Postcondición | El titular conserva la reserva, la cede al oferente, o el ítem queda libre. |
+| Adaptación móvil | Ofrecimiento y resolución vía REST contra el backend (`item_offers`); el aviso al titular y el resultado llegan por Socket.IO (`offer:created` / `offer:resolved`). Ver `04-arquitectura.md` y `12-diseno-concurrencia-de-reserva.md`. |
 
 ## 3.4 CU-03 — Marcar ítem como comprado
 
@@ -102,7 +106,7 @@ proyecto (evitar compras duplicadas).
 | RF-01, RF-02 | CU-01 | `screens/access/JoinSessionScreen.tsx`, `screens/access/EnterNameScreen.tsx` |
 | RF-03 | Crear sesión (Anfitrión) | `screens/session/NewSessionScreen.tsx` |
 | RF-04 | — | `screens/home/HomeScreen.tsx`, `screens/history/SessionHistoryScreen.tsx` |
-| RF-05..RF-08 | CU-02, CU-02a | `screens/session/ShoppingListScreen.tsx`, `screens/session/ItemDetailScreen.tsx`, `components/list/ReservationConflictModal.tsx` |
+| RF-05..RF-08a | CU-02, CU-02a | `screens/session/ShoppingListScreen.tsx`, `screens/session/ItemDetailScreen.tsx`, `components/list/ItemOfferNotice.tsx` |
 | RF-09, RF-10 | — | `components/list/ItemRow.tsx`, `components/list/ItemStatusBadge.tsx` |
 | RF-11, RF-12 | CU-03 | `screens/session/ItemDetailScreen.tsx`, `services/media/ticketUpload.ts` |
 | RF-13 | Gestionar presupuesto | `screens/budget/BudgetScreen.tsx` |

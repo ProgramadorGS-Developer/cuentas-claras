@@ -36,19 +36,26 @@ Cubre RF-01, RF-02, RF-03, RF-04, CU-01.
 
 ## Fase 2 — Lista de compras y concurrencia (EDT 1.1.3, 1.2.2 / S3-S6)
 
-El corazón del proyecto. Cubre RF-05..RF-10, CU-02, CU-02a.
+El corazón del proyecto. Cubre RF-05..RF-10 y RF-08a, CU-02, CU-02a. El
+diseño detallado está en `12-diseno-concurrencia-de-reserva.md`.
 
-1. Backend: completar y probar `reservationQueue.service.ts` y
-   `sockets/reservation.handlers.ts` con **pruebas de estrés manuales**:
-   abrir dos clientes (dos emuladores o un emulador + un dispositivo) y
-   reservar el mismo ítem casi simultáneamente.
-2. Mobile: conectar `ShoppingListScreen`, `ItemRow`,
-   `ReservationConflictModal` y el hook `useReservation` a los eventos de
-   socket (`reserve:attempt`, `reserve:conflict`, `reserve:respond`,
-   `reserve:granted`).
-3. Validar el criterio de aceptación EDT 1.2.2.4: el modal de conflicto
-   debe aparecer en menos de 1 segundo y ser inequívoco.
-4. Implementar la liberación de reservas (RF-06) y el campo de
+1. Backend (Fase 1 del plan): endpoint `POST /items/:itemId/reserve`
+   atómico (`UPDATE ... WHERE reserved_by IS NULL`, éxito si
+   `changes === 1`), `POST /items/:itemId/release` restringido al titular,
+   y `markPurchased()` con verificación de titular y estado previo.
+   Emitir `item:updated` a la sala tras cada cambio. Prueba de estrés:
+   `server/scripts/stress-reserve.ts` con ≥ 10 requests en paralelo →
+   una `200`, el resto `409`.
+2. Backend (Fase 2): tabla `item_offers`, endpoints de `offers` /
+   `resolve` con autorización por titular, eventos `offer:created` /
+   `offer:resolved`.
+3. Mobile (Fase 3): conectar `ShoppingListScreen`, `ItemRow` y el hook
+   `useReservation` (reserva/liberación por REST) y un `useItemOffers`
+   para el aviso **no bloqueante** de ofrecimiento (`ItemOfferNotice`),
+   con tres acciones: comprar, ceder, liberar.
+4. Validar el criterio de aceptación EDT 1.2.2.4: el cambio de estado se
+   refleja en los demás dispositivos en menos de 1 segundo.
+5. Implementar la liberación de reservas (RF-06) y el campo de
    observaciones (RF-10, ya incluido en `items.observation`).
 
 ## Fase 3 — Compra, precios y tickets (EDT 1.1.4.1, 1.1.5, 1.2.4 / S5-S7)

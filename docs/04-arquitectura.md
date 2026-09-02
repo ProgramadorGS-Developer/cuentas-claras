@@ -74,7 +74,7 @@ contemplaba el modo offline).
 | Runtime | Node.js + TypeScript | Mismo lenguaje que el cliente, reduce el costo cognitivo del equipo. |
 | Framework HTTP | Express | Simple, suficiente para el volumen de endpoints del proyecto. |
 | Base de datos | **SQLite** vía `better-sqlite3` | Requisito del proyecto; motor sincrónico, rápido y sin infraestructura adicional — ideal para un proyecto académico o un MVP de bajo volumen. |
-| Tiempo real | Socket.IO | Arbitraje de reservas simultáneas (RF-08) y *broadcast* de cambios de estado. |
+| Tiempo real | Socket.IO | *Broadcast* de cambios de estado (`item:updated`) y avisos de ofrecimiento (RF-08a). El arbitraje de la reserva (RF-08) se resuelve por REST de forma atómica, no por socket. |
 | Subida de archivos | `multer` | RF-12: recepción de fotos de tickets. |
 
 > **Nota de escalabilidad**: `better-sqlite3` con modo `WAL` soporta
@@ -87,22 +87,27 @@ contemplaba el modo offline).
 
 1. Usuario A y Usuario B, en dos teléfonos, tocan "Reservar" sobre el mismo
    ítem casi al mismo tiempo.
-2. Cada app emite `reserve:attempt` por su socket hacia el backend.
-3. El backend (`reservationQueue.service.ts`) recibe ambos eventos. El
-   primero que llega obtiene la reserva; el segundo entra en una cola para
-   ese ítem.
-4. El backend emite `reserve:conflict` al usuario que ya tiene la reserva,
-   indicándole que hay otro interesado, y le pide confirmación
-   (`ReservationConflictModal.tsx`).
-5. Según la respuesta (`reserve:respond`), el backend otorga la reserva
-   definitiva (`reserve:granted`) o se la ofrece al siguiente en la cola.
-6. El backend actualiza su SQLite y emite `item:updated` a **todos** los
-   dispositivos conectados a esa sesión (`io.to("session:<id>")`).
-7. Cada app recibe el evento, actualiza su SQLite local (cache) y
+2. Cada app hace `POST /items/:itemId/reserve` contra el backend.
+3. El backend ejecuta, por cada request,
+   `UPDATE items SET reserved_by = ? WHERE id = ? AND reserved_by IS NULL`.
+   Como `node:sqlite` (`DatabaseSync`) es sincrónico y Node es de un solo
+   hilo, las dos sentencias se serializan: una afecta 1 fila (gana), la
+   otra afecta 0.
+4. El que ganó recibe `200 { item }`. El que perdió recibe
+   `409 { reservedBy, name }` y su UI muestra "ya reservado por \<nombre\>".
+   No hay cola, ni modal bloqueante, ni confirmación humana.
+5. El backend emite `item:updated` a **todos** los dispositivos conectados
+   a esa sesión (`io.to("session:<id>")`).
+6. Cada app recibe el evento, actualiza su SQLite local (cache) y
    re-renderiza la lista.
 
-Este mismo patrón (REST/-socket → SQLite servidor → *broadcast* → SQLite
-cliente) se repite para: marcar un ítem como comprado, cargar un aporte de
+Si B igual quiere ese ítem, puede crear un **ofrecimiento**
+(`POST /items/:itemId/offers`, RF-08a): A recibe `offer:created` como
+aviso no bloqueante y decide comprarlo, cederlo o liberarlo; el resultado
+viaja por `offer:resolved`. Ver `12-diseno-concurrencia-de-reserva.md`.
+
+Este mismo patrón (REST → SQLite servidor → *broadcast* → SQLite cliente)
+se repite para: marcar un ítem como comprado, cargar un aporte de
 presupuesto, y actualizar el balance de resultado.
 
 ## 4.4 Offline-first: qué pasa sin conexión
