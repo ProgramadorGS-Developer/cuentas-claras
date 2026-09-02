@@ -108,7 +108,7 @@ export function NewSessionScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.screen} edges={["top"]}>
+    <SafeAreaView style={styles.screen} edges={["top", "bottom"]}>
       <AppHeader onBack={() => navigation.goBack()} />
 
       <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">

@@ -29,7 +29,7 @@ export function HomeScreen() {
   const { active } = useHomeDashboard();
 
   return (
-    <SafeAreaView style={styles.screen} edges={["top"]}>
+    <SafeAreaView style={styles.screen} edges={["top", "bottom"]}>
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <Pressable
           style={styles.backLink}
