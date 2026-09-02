@@ -10,5 +10,11 @@ export const colors = {
   success: "#2E7D32",
   danger: "#C62828",
   warning: "#F9A825",
+  info: "#2E6C8E",
   border: "#E0E0E0",
+  // Tintes suaves para íconos/decoración (fondo de circulos, blobs), no para texto ni botones.
+  tintGreen: "#E3F1E4",
+  tintOrange: "#FDEADB",
+  tintBlue: "#E4EEFB",
+  tintPurple: "#EDE7F9",
 };
