@@ -132,6 +132,9 @@ presupuesto, y actualizar el balance de resultado.
 - El `shareToken` de cada sesión funciona como capacidad de acceso: quien
   lo tiene, entra. Es equivalente al nivel de seguridad de un link de
   WhatsApp compartido, consistente con el alcance del proyecto original.
+  El mismo token da acceso de solo lectura a la pantalla de resultado
+  (`GET /sessions/shared/:shareToken/result`, RF-16 / EDT 1.1.4.3): no se
+  emite un token aparte para esto.
 - Las fotos de tickets se sirven desde `/uploads/<archivo>` sin listado
   público de directorio.
 
