@@ -4,6 +4,8 @@ import { userRepository } from "@/database/repositories/userRepository";
 import { itemRepository } from "@/database/repositories/itemRepository";
 import { Session } from "@/domain/models";
 import { StatusPillVariant } from "@/components/common/StatusPill";
+import { joinSessionRoom } from "@/services/realtime/socket";
+import { onSessionClosed } from "@/services/realtime/sessionEvents";
 
 export interface SessionSummary {
   session: Session;
@@ -57,6 +59,22 @@ export function useHomeDashboard() {
   useEffect(() => {
     refresh();
   }, [refresh]);
+
+  // RF-04: si el anfitrión cierra la sesión desde otro dispositivo, este Home lo refleja
+  // sin esperar a que el usuario reabra la app (ver server/src/sockets/broadcast.ts).
+  const activeSessionId = active?.session.id;
+  useEffect(() => {
+    if (!activeSessionId) return;
+    joinSessionRoom(activeSessionId);
+
+    const unsubscribe = onSessionClosed(async (raw) => {
+      if (raw.id !== activeSessionId) return;
+      await sessionRepository.upsert(raw);
+      refresh();
+    });
+
+    return unsubscribe;
+  }, [activeSessionId, refresh]);
 
   return { loading, active, recent, refresh };
 }
