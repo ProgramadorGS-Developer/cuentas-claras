@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { StyleSheet, View } from "react-native";
+import { Alert, StyleSheet, View } from "react-native";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { RootStackParamList } from "@/navigation/types";
 import { AppText } from "@/components/common/AppText";
@@ -20,7 +20,7 @@ export function ItemDetailScreen({ route }: Props) {
   const { itemId } = route.params;
   const item = useSessionStore((s) => s.items.find((i) => i.id === itemId));
   const participantId = useUserStore((s) => s.participantId);
-  const { reserve } = useReservation();
+  const { reserve, release } = useReservation();
   const [price, setPrice] = useState("");
   const [priceError, setPriceError] = useState(false);
 
@@ -28,6 +28,27 @@ export function ItemDetailScreen({ route }: Props) {
 
   const isMine = item.reservedBy === participantId;
   const isFree = !item.reservedBy;
+
+  function reservationErrorMessage(error: unknown): string {
+    return (error as any)?.response?.data?.error ?? "Probá de nuevo en un momento.";
+  }
+
+  async function handleReserve() {
+    try {
+      await reserve(itemId);
+    } catch (error) {
+      // RF-08: perdió la carrera por el ítem — el servidor ya decidió, no hay nada que negociar.
+      Alert.alert("No se pudo reservar", reservationErrorMessage(error));
+    }
+  }
+
+  async function handleRelease() {
+    try {
+      await release(itemId);
+    } catch (error) {
+      Alert.alert("No se pudo liberar la reserva", reservationErrorMessage(error));
+    }
+  }
 
   async function handleMarkPurchased() {
     if (!isValidPrice(price) || !participantId) {
@@ -49,9 +70,10 @@ export function ItemDetailScreen({ route }: Props) {
       <AppText variant="caption">{item.observation ?? "Sin observaciones"}</AppText>
 
       <View style={{ marginTop: spacing.lg, gap: spacing.sm }}>
-        {isFree && <AppButton label="Reservar" onPress={() => reserve(itemId)} />}
+        {isFree && <AppButton label="Reservar" onPress={handleReserve} />}
         {isMine && item.status === "pendiente" && (
           <>
+            <AppButton label="Liberar reserva" variant="secondary" onPress={handleRelease} />
             <AppTextInput
               placeholder="Precio pagado"
               keyboardType="numeric"

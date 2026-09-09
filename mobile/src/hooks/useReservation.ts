@@ -1,42 +1,30 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback } from "react";
 import { useUserStore } from "@/store/userStore";
-import {
-  attemptReserve,
-  onReservationConflict,
-  onReservationGranted,
-  respondToConflict,
-} from "@/services/realtime/reservationEvents";
+import { itemApi } from "@/services/api/itemApi";
 
-// CU-02 + CU-02a: reservar un ítem y manejar el conflicto de reserva simultánea.
+// CU-02/CU-02a + RF-06 (EDT 1.1.2.2/1.1.3.3): reservar y liberar ítems por REST.
+// El arbitraje ya es atómico e instantáneo en el servidor (ver docs/12-diseno-concurrencia-de-reserva.md):
+// no hay negociación de conflicto, quien pierde la carrera recibe un 409 y listo. El estado del ítem
+// se actualiza solo vía el evento "item:updated" que ya escucha useShoppingList — no hace falta
+// tocar SQLite/estado local acá, mismo patrón que ya usa markPurchased en ItemDetailScreen.
 export function useReservation() {
   const participantId = useUserStore((s) => s.participantId);
-  const [conflict, setConflict] = useState<{ itemId: string; competingParticipantName: string } | null>(null);
-
-  useEffect(() => {
-    const off1 = onReservationConflict((payload) => setConflict(payload));
-    const off2 = onReservationGranted(() => setConflict(null));
-    return () => {
-      off1();
-      off2();
-    };
-  }, []);
 
   const reserve = useCallback(
-    (itemId: string) => {
+    async (itemId: string) => {
       if (!participantId) return;
-      attemptReserve(itemId, participantId);
+      await itemApi.reserve(itemId, participantId);
     },
     [participantId],
   );
 
-  const resolveConflict = useCallback(
-    (insist: boolean) => {
-      if (!participantId || !conflict) return;
-      respondToConflict(conflict.itemId, participantId, insist);
-      setConflict(null);
+  const release = useCallback(
+    async (itemId: string) => {
+      if (!participantId) return;
+      await itemApi.release(itemId, participantId);
     },
-    [participantId, conflict],
+    [participantId],
   );
 
-  return { conflict, reserve, resolveConflict };
+  return { reserve, release };
 }
