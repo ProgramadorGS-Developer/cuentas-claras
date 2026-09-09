@@ -131,3 +131,18 @@ export function simplifySettlement(balances: BalanceEntry[]): SettlementTransfer
 
   return transfers;
 }
+
+// RF-16 / EDT 1.1.4.3: resumen de texto plano del resultado, listo para el Share sheet nativo.
+// Lo arma el backend (y no el cliente) para no duplicar el formateo y usar los nombres, no los IDs.
+export function buildResultShareText(result: SessionResult, sessionName: string, deepLink: string): string {
+  const nameOf = new Map(result.balances.map((b) => [b.participantId, b.participantName]));
+  const money = (n: number) => `$${n.toFixed(2)}`;
+
+  const lines = result.transfers.length
+    ? result.transfers.map(
+        (t) => `${nameOf.get(t.fromParticipantId) ?? "?"} le paga ${money(t.amount)} a ${nameOf.get(t.toParticipantId) ?? "?"}`,
+      )
+    : ["Todos están a mano."];
+
+  return [`Resultado de "${sessionName}" — CuentasClaras`, "", ...lines, "", `Ver detalle: ${deepLink}`].join("\n");
+}

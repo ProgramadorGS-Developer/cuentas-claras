@@ -110,5 +110,5 @@ proyecto (evitar compras duplicadas).
 | RF-09, RF-10 | — | `components/list/ItemRow.tsx`, `components/list/ItemStatusBadge.tsx` |
 | RF-11, RF-12 | CU-03 | `screens/session/ItemDetailScreen.tsx`, `services/media/ticketUpload.ts` |
 | RF-13 | Gestionar presupuesto | `screens/budget/BudgetScreen.tsx` |
-| RF-14, RF-16 | CU-04, CU-04a | `screens/result/ResultScreen.tsx`, `domain/balanceCalculator.ts` |
+| RF-14, RF-16 | CU-04, CU-04a | `screens/result/ResultScreen.tsx`, `domain/balanceCalculator.ts`; backend: `GET /sessions/:sessionId/result` (en vivo), `GET /sessions/shared/:shareToken/result` (compartible, EDT 1.1.4.3) |
 | RF-15 | Calcular gastos en reunión | `screens/meeting/MeetingExpensesScreen.tsx` |
