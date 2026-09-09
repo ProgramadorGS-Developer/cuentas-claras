@@ -130,6 +130,17 @@ empareja al mayor deudor con el mayor acreedor hasta saldar todas las
 cuentas con el menor número posible de transferencias
 (`simplifySettlement`).
 
+**Tiempo real (EDT 1.1.4.2).** El servidor recalcula el resultado y lo
+difunde por Socket.IO con el evento `result:updated` a `session:<id>` tras
+cualquier cambio que lo afecte: una compra con precio
+(`POST /items/:itemId/purchase`) o un aporte de presupuesto
+(`POST /sessions/:sessionId/budget`). El payload es el resultado completo
+—`{ sessionId, totals, balances, transfers }`, el mismo que devuelve
+`GET /sessions/:sessionId/result`— para que el cliente no tenga que
+recalcular. `POST /sessions/:sessionId/budget` valida el monto (número
+`> 0`, `<= 999999.99`, hasta 2 decimales) y que el participante pertenezca
+a la sesión.
+
 ## 5.4 "Gastos en reunión" (RF-15)
 
 No requiere persistencia de sesión: es una calculadora rápida
