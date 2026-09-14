@@ -15,6 +15,7 @@ import { sessionRepository } from "@/database/repositories/sessionRepository";
 import { userRepository } from "@/database/repositories/userRepository";
 import { itemRepository } from "@/database/repositories/itemRepository";
 import { useUserStore } from "@/store/userStore";
+import { useSessionStore } from "@/store/sessionStore";
 import { useNavigation } from "@react-navigation/native";
 import { shareSessionLinkViaWhatsApp } from "@/services/whatsapp/shareLink";
 
@@ -35,6 +36,8 @@ const SUGGESTED_ITEMS = [
 export function NewSessionScreen() {
   const navigation = useNavigation<any>();
   const setUser = useUserStore((s) => s.setUser);
+  const setSession = useSessionStore((s) => s.setSession);
+  const setParticipants = useSessionStore((s) => s.setParticipants);
   const [sessionName, setSessionName] = useState("");
   const [hostName, setHostName] = useState("");
   const [items, setItems] = useState<string[]>([]);
@@ -79,15 +82,22 @@ export function NewSessionScreen() {
       // hostId viene del servidor (no se genera acá): es el id real del participante-anfitrión
       // ya creado en la tabla `participants` al crear la sesión — usar otro id distinto hace que
       // reservar/liberar/comprar como anfitrión falle con 404 (ver docs/12-diseno-concurrencia...).
+      const host = {
+        id: session.hostId,
+        sessionId: session.id,
+        name: hostName,
+        isHost: true,
+        joinedAt: session.createdAt,
+      };
+      // Puebla el store global de la sesión activa (Zustand, en memoria): sin esto,
+      // ShoppingListScreen/BudgetScreen/useBalance no saben en qué sesión está parado el
+      // anfitrión. Va SIEMPRE, sin depender de que el cacheo en SQLite (abajo) tenga éxito.
+      setSession(session);
+      setParticipants([host]);
+
       try {
         await sessionRepository.upsert(session);
-        await userRepository.upsert({
-          id: session.hostId,
-          sessionId: session.id,
-          name: hostName,
-          isHost: true,
-          joinedAt: session.createdAt,
-        });
+        await userRepository.upsert(host);
         const { data: serverItems } = await itemApi.listBySession(session.id);
         for (const item of serverItems) {
           await itemRepository.upsert(item);

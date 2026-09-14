@@ -26,7 +26,7 @@ export function SessionHistoryScreen() {
         renderItem={({ item }) => (
           <Pressable
             style={styles.card}
-            onPress={() => goToSession(navigation, item.session.id)}
+            onPress={() => goToSession(navigation, item.session.id, item.session)}
           >
             <View style={styles.iconBubble}>
               <ReceiptIcon size={20} color={colors.primaryDark} />

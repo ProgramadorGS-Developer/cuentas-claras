@@ -11,18 +11,22 @@ import { colors } from "@/theme/colors";
 import { spacing } from "@/theme/spacing";
 import { isNonEmptyName } from "@/utils/validators";
 import { useUserStore } from "@/store/userStore";
+import { useSessionStore } from "@/store/sessionStore";
 import { userRepository } from "@/database/repositories/userRepository";
+import { sessionRepository } from "@/database/repositories/sessionRepository";
 import { participantApi } from "@/services/api/participantApi";
 
 type Props = NativeStackScreenProps<RootStackParamList, "EnterName">;
 
 // CU-01, pasos 3-5 / RF-02: al entrar por el link solo se pide el nombre.
 export function EnterNameScreen({ route, navigation }: Props) {
-  const { sessionId } = route.params;
+  const { sessionId, session: sessionParam } = route.params;
   const [name, setName] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const setUser = useUserStore((s) => s.setUser);
+  const setSession = useSessionStore((s) => s.setSession);
+  const setParticipants = useSessionStore((s) => s.setParticipants);
 
   async function handleContinue() {
     if (!isNonEmptyName(name)) {
@@ -38,11 +42,27 @@ export function EnterNameScreen({ route, navigation }: Props) {
       // docs/12-diseno-concurrencia-de-reserva.md).
       const { data: participant } = await participantApi.register(sessionId, name.trim());
 
+      // Puebla el store global de la sesión activa (Zustand, en memoria) apenas la tenemos:
+      // sin esto, ShoppingListScreen/BudgetScreen/useBalance nunca saben en qué sesión está
+      // parado el usuario. No depende de SQLite: si venimos con `sessionParam` (route param,
+      // ver JoinSessionScreen/goToSession) ya alcanza para setearla.
+      if (sessionParam) setSession(sessionParam);
+      setParticipants([participant]);
+
       // Cachear localmente en su propio try/catch: si esto falla (ej. SQLite no existe en el
-      // preview web) NO debe mostrarse como si el registro en el servidor hubiera fallado —
-      // ya tuvo éxito en ese momento. En el dispositivo real esto sí persiste.
+      // preview web) NO debe mostrarse como si el registro en el servidor hubiera fallado — ya
+      // tuvo éxito en ese momento. En el dispositivo real esto sí persiste.
       try {
         await userRepository.upsert(participant);
+
+        const session = sessionParam ?? (await sessionRepository.findById(sessionId));
+        if (session) {
+          await sessionRepository.upsert(session);
+          if (!sessionParam) setSession(session);
+        }
+
+        const participants = await userRepository.listBySession(sessionId);
+        setParticipants(participants);
       } catch {
         // Falla esperable en el preview web; en el dispositivo real persiste sin problema.
       }
@@ -71,7 +91,10 @@ export function EnterNameScreen({ route, navigation }: Props) {
           <AppText variant="h2" style={{ marginBottom: spacing.md }}>
             ¿Cómo te llamás?
           </AppText>
-          <AppText variant="caption" style={{ color: colors.textMuted, marginBottom: spacing.lg, textAlign: "center" }}>
+          <AppText
+            variant="caption"
+            style={{ color: colors.textMuted, marginBottom: spacing.lg, textAlign: "center" }}
+          >
             Con eso alcanza para identificarte en la sesión, nada más.
           </AppText>
           <AppTextInput
