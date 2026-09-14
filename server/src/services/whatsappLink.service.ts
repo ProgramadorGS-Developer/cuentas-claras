@@ -12,3 +12,10 @@ export function buildSessionDeepLink(shareToken: string): string {
   // Esquema propio registrado en app.json (mobile) para abrir la app directamente.
   return `cuentasclaras://join?token=${shareToken}`;
 }
+
+// RF-16 / CU-04 A1 / EDT 1.1.4.3: link para compartir la pantalla de resultado.
+// Reutiliza el share_token de la sesión (misma capacidad de acceso que el link de invitación,
+// consistente con docs/04-arquitectura.md §4.5). Abre la app en la pantalla de Resultado (read-only).
+export function buildResultDeepLink(shareToken: string): string {
+  return `cuentasclaras://result?token=${shareToken}`;
+}
