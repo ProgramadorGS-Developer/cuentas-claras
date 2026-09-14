@@ -1,7 +1,8 @@
 import { Request, Response } from "express";
 import { v4 as uuid } from "uuid";
 import { db } from "../db/connection";
-import { generateShareToken } from "../services/whatsappLink.service";
+import { generateShareToken, buildResultDeepLink } from "../services/whatsappLink.service";
+import { computeSessionResult, buildResultShareText } from "../services/balance.service";
 
 // RF-03/RF-04: CRUD de sesiones (EDT 1.1.2.1).
 export const sessionsController = {
@@ -46,6 +47,26 @@ export const sessionsController = {
   list(_req: Request, res: Response) {
     const sessions = db.prepare("SELECT * FROM sessions ORDER BY created_at DESC").all();
     res.json((sessions as any[]).map(toCamel));
+  },
+
+  // RF-16 / CU-04 A1 / EDT 1.1.4.3: resultado de una sesión accesible por su share_token,
+  // sin login (el token es la capacidad de acceso, igual que el link de invitación). Solo lectura.
+  // Balance en vivo: no se persiste un snapshot (ver docs/05-modelo-de-datos.md §5.3).
+  getSharedResult(req: Request, res: Response) {
+    const { shareToken } = req.params;
+    const session = db.prepare("SELECT * FROM sessions WHERE share_token = ?").get(shareToken) as any;
+    if (!session) {
+      return res.status(404).json({ error: "Sesión no encontrada o link inválido" });
+    }
+
+    const result = computeSessionResult(session.id);
+    const deepLink = buildResultDeepLink(shareToken);
+    res.json({
+      session: { name: session.name, hostName: session.host_name, closedAt: session.closed_at },
+      result,
+      deepLink,
+      shareText: buildResultShareText(result, session.name, deepLink),
+    });
   },
 };
 
