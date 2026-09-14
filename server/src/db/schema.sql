@@ -48,6 +48,8 @@ CREATE TABLE IF NOT EXISTS budget_contributions (
   id TEXT PRIMARY KEY,
   session_id TEXT NOT NULL REFERENCES sessions(id),
   participant_id TEXT NOT NULL REFERENCES participants(id),
+  -- DEUDA (1.1.4.2): sumar CHECK (amount > 0 AND amount <= 999999.99), misma situación
+  -- que items.price_paid: hoy la validación vive solo en budget.controller.ts (contribute).
   amount REAL NOT NULL,
   created_at TEXT NOT NULL
 );

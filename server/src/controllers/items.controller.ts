@@ -8,7 +8,9 @@ import {
   listItems,
   serializeItem,
 } from "../services/reservation.service";
-import { broadcastItemUpdated } from "../sockets/broadcast";
+import { broadcastItemUpdated, broadcastResultUpdated } from "../sockets/broadcast";
+import { computeSessionResult } from "../services/balance.service";
+import { esMontoValido } from "../utils/money";
 
 // RF-05..RF-12: consulta de ítems, reserva/liberación atómica y marcar como comprado.
 // El arbitraje de reserva se resuelve acá por REST (una respuesta 200/409 por intento),
@@ -64,13 +66,7 @@ export const itemsController = {
 
     // A2 (CU-03): precio inválido. Se acepta 0 a propósito: un invitado puede
     // donar/regalar un ítem y registrarlo con precio pagado 0.
-    if (
-      typeof pricePaid !== "number" ||
-      !Number.isFinite(pricePaid) ||
-      pricePaid < 0 ||
-      pricePaid > 999999.99 ||
-      tieneMasDeDosDecimales(pricePaid)
-    ) {
+    if (!esMontoValido(pricePaid)) {
       return res.status(400).json({
         error: "Precio inválido: debe ser un número entre 0 y 999999.99, con hasta 2 decimales",
       });
@@ -83,7 +79,10 @@ export const itemsController = {
       return res.status(409).json({ error: "Solo quien tiene la reserva puede marcar el ítem como comprado (RF-07)" });
     }
 
-    broadcastItemUpdated(getIo(req), result.item);
+    const io = getIo(req);
+    broadcastItemUpdated(io, result.item);
+    // La compra cambió el gasto del participante: se difunde el balance recalculado (1.1.4.2).
+    broadcastResultUpdated(io, computeSessionResult(result.item.session_id));
     res.json(serializeItem(result.item));
   },
 
@@ -101,10 +100,4 @@ export const itemsController = {
 
 function getIo(req: Request): SocketServer | undefined {
   return req.app.get("io") as SocketServer | undefined;
-}
-
-// true si `numero` tiene más de 2 decimales. La comparación es con tolerancia
-// porque `19.99 * 100` da 1998.9999999999998 en punto flotante binario.
-function tieneMasDeDosDecimales(numero: number): boolean {
-  return Math.abs(numero * 100 - Math.round(numero * 100)) > 1e-6;
 }
