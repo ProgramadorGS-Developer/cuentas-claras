@@ -2,8 +2,9 @@ import { httpClient } from "./httpClient";
 import { ShoppingItem } from "@/domain/models";
 
 // CU-02/CU-02a/CU-03: reservar, liberar, marcar como comprado.
-// Los eventos de conflicto de reserva en tiempo real viajan por sockets (ver realtime/reservationEvents.ts);
-// estos endpoints REST son la vía "de respaldo" para consultar/actuar cuando no hay socket disponible.
+// El arbitraje de reserva se resuelve acá por REST (200 si ganaste, 409 si ya estaba tomado);
+// el socket (ver realtime/reservationEvents.ts) solo difunde el nuevo estado del ítem
+// (item:updated) para que todos los dispositivos converjan. Ver docs/12-diseno-concurrencia-de-reserva.md.
 export const itemApi = {
   listBySession: (sessionId: string) => httpClient.get<ShoppingItem[]>(`/sessions/${sessionId}/items`),
 

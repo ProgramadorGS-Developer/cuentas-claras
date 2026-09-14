@@ -27,7 +27,10 @@ export const sessionsController = {
       insertItem.run(uuid(), sessionId, itemName, now);
     }
 
-    res.status(201).json({ id: sessionId, name, hostName, createdAt: now, closedAt: null, shareToken });
+    // hostId: el cliente lo necesita para poder reservar/liberar/comprar ítems como anfitrión
+    // (ver docs/12-diseno-concurrencia-de-reserva.md) — sin esto, el id de participante del
+    // anfitrión solo existe acá y toda acción sobre ítems le devolvería 404.
+    res.status(201).json({ id: sessionId, name, hostName, createdAt: now, closedAt: null, shareToken, hostId });
   },
 
   getByToken(req: Request, res: Response) {

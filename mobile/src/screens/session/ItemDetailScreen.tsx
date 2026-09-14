@@ -20,7 +20,7 @@ export function ItemDetailScreen({ route }: Props) {
   const { itemId } = route.params;
   const item = useSessionStore((s) => s.items.find((i) => i.id === itemId));
   const participantId = useUserStore((s) => s.participantId);
-  const { reserve } = useReservation();
+  const { reserve, release, pendingItemId } = useReservation();
   const [price, setPrice] = useState("");
   const [priceError, setPriceError] = useState(false);
 
@@ -49,9 +49,21 @@ export function ItemDetailScreen({ route }: Props) {
       <AppText variant="caption">{item.observation ?? "Sin observaciones"}</AppText>
 
       <View style={{ marginTop: spacing.lg, gap: spacing.sm }}>
-        {isFree && <AppButton label="Reservar" onPress={() => reserve(itemId)} />}
+        {isFree && (
+          <AppButton
+            label="Reservar"
+            disabled={pendingItemId === itemId}
+            onPress={() => reserve(itemId, item.name)}
+          />
+        )}
         {isMine && item.status === "pendiente" && (
           <>
+            <AppButton
+              label="Liberar"
+              variant="secondary"
+              disabled={pendingItemId === itemId}
+              onPress={() => release(itemId)}
+            />
             <AppTextInput
               placeholder="Precio pagado"
               keyboardType="numeric"

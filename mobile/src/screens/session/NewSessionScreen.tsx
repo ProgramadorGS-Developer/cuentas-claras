@@ -16,7 +16,6 @@ import { itemRepository } from "@/database/repositories/itemRepository";
 import { useUserStore } from "@/store/userStore";
 import { useNavigation } from "@react-navigation/native";
 import { shareSessionLinkViaWhatsApp } from "@/services/whatsapp/shareLink";
-import { generateId } from "@/utils/idGenerator";
 
 // Sugerencias genéricas de compra grupal: no atadas a un solo tipo de evento (asado),
 // para que sirvan también en previas, viajes u otras juntadas.
@@ -76,12 +75,13 @@ export function NewSessionScreen() {
       // no puede mostrar la sesión recién creada porque siempre lee de SQLite local, nunca del
       // server. Se aísla en su propio try/catch: SQLite no existe en el preview web (expo-sqlite
       // no soporta web), así que ahí fallaría, pero eso no debe frenar la creación de la sesión.
-      let hostId: string | null = null;
+      // hostId viene del servidor (no se genera acá): es el id real del participante-anfitrión
+      // ya creado en la tabla `participants` al crear la sesión — usar otro id distinto hace que
+      // reservar/liberar/comprar como anfitrión falle con 404 (ver docs/12-diseno-concurrencia...).
       try {
         await sessionRepository.upsert(session);
-        hostId = await generateId();
         await userRepository.upsert({
-          id: hostId,
+          id: session.hostId,
           sessionId: session.id,
           name: hostName,
           isHost: true,
@@ -94,7 +94,7 @@ export function NewSessionScreen() {
       } catch {
         // Falla esperable en el preview web (sin SQLite nativo); en el dispositivo real persiste.
       }
-      setUser(hostId ?? session.id, hostName, true);
+      setUser(session.hostId, hostName, true);
 
       if (shareViaWhatsApp) {
         const shareUrl = `cuentasclaras://join?token=${session.shareToken}`;
