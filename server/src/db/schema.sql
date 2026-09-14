@@ -26,6 +26,10 @@ CREATE TABLE IF NOT EXISTS items (
   status TEXT NOT NULL DEFAULT 'pendiente' CHECK (status IN ('pendiente', 'comprado')),
   reserved_by TEXT REFERENCES participants(id),
   observation TEXT,
+  -- DEUDA (1.1.4.1): sumar CHECK (price_paid IS NULL OR (price_paid >= 0 AND price_paid <= 999999.99)).
+  -- Hoy la validación vive solo en items.controller.ts (markPurchased). Aplicarlo acá requiere
+  -- recrear la tabla o una migración real (SQLite no soporta ALTER TABLE ADD CONSTRAINT), y como
+  -- schema.sql usa CREATE TABLE IF NOT EXISTS no impactaría las bases ya creadas.
   price_paid REAL,
   ticket_image_uri TEXT,
   updated_at TEXT NOT NULL

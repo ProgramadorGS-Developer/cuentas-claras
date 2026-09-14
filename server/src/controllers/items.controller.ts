@@ -61,9 +61,19 @@ export const itemsController = {
     const { participantId, pricePaid } = req.body as { participantId: string; pricePaid: number };
 
     if (!participantId) return res.status(400).json({ error: "Falta participantId" });
-    if (typeof pricePaid !== "number" || pricePaid <= 0) {
-      // A2 (CU-03): precio inválido.
-      return res.status(400).json({ error: "El precio debe ser un número positivo" });
+
+    // A2 (CU-03): precio inválido. Se acepta 0 a propósito: un invitado puede
+    // donar/regalar un ítem y registrarlo con precio pagado 0.
+    if (
+      typeof pricePaid !== "number" ||
+      !Number.isFinite(pricePaid) ||
+      pricePaid < 0 ||
+      pricePaid > 999999.99 ||
+      tieneMasDeDosDecimales(pricePaid)
+    ) {
+      return res.status(400).json({
+        error: "Precio inválido: debe ser un número entre 0 y 999999.99, con hasta 2 decimales",
+      });
     }
 
     const result = purchaseItem(itemId, participantId, pricePaid);
@@ -91,4 +101,10 @@ export const itemsController = {
 
 function getIo(req: Request): SocketServer | undefined {
   return req.app.get("io") as SocketServer | undefined;
+}
+
+// true si `numero` tiene más de 2 decimales. La comparación es con tolerancia
+// porque `19.99 * 100` da 1998.9999999999998 en punto flotante binario.
+function tieneMasDeDosDecimales(numero: number): boolean {
+  return Math.abs(numero * 100 - Math.round(numero * 100)) > 1e-6;
 }

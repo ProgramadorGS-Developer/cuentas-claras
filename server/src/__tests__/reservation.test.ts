@@ -139,3 +139,55 @@ describe("POST /items/:itemId/purchase", () => {
     );
   });
 });
+
+// 1.1.4.1 — Validación de precios pagados. RF-11 / CU-03 A2.
+describe("POST /items/:itemId/purchase — validación de pricePaid", () => {
+  async function reservedItem() {
+    const { itemId, participantIds } = seed();
+    const [p1] = participantIds;
+    await request(app).post(`/items/${itemId}/reserve`).send({ participantId: p1 });
+    return { itemId, p1 };
+  }
+
+  it("acepta pricePaid 0: un invitado dona/regala el ítem (200)", async () => {
+    const { itemId, p1 } = await reservedItem();
+    const res = await request(app).post(`/items/${itemId}/purchase`).send({ participantId: p1, pricePaid: 0 });
+    expect(res.status).toBe(200);
+    expect(res.body.status).toBe("comprado");
+    expect(res.body.pricePaid).toBe(0);
+  });
+
+  it("acepta el límite superior 999999.99 (200)", async () => {
+    const { itemId, p1 } = await reservedItem();
+    const res = await request(app).post(`/items/${itemId}/purchase`).send({ participantId: p1, pricePaid: 999999.99 });
+    expect(res.status).toBe(200);
+    expect(res.body.pricePaid).toBe(999999.99);
+  });
+
+  it("acepta dos decimales exactos sin falso rechazo por punto flotante (200)", async () => {
+    const { itemId, p1 } = await reservedItem();
+    const res = await request(app).post(`/items/${itemId}/purchase`).send({ participantId: p1, pricePaid: 19.99 });
+    expect(res.status).toBe(200);
+    expect(res.body.pricePaid).toBe(19.99);
+  });
+
+  it.each([
+    ["negativo", -1],
+    ["mayor al límite", 1_000_000],
+    ["con más de 2 decimales", 10.999],
+    ["no numérico (string)", "100"],
+    ["faltante", undefined],
+    ["null", null],
+  ])("rechaza precio %s (400) y deja el ítem pendiente", async (_caso, pricePaid) => {
+    const { itemId, p1 } = await reservedItem();
+    const res = await request(app).post(`/items/${itemId}/purchase`).send({ participantId: p1, pricePaid });
+    expect(res.status).toBe(400);
+    expect(reservedBy(itemId)).toBe(p1);
+    const row = db.prepare("SELECT status, price_paid FROM items WHERE id = ?").get(itemId) as {
+      status: string;
+      price_paid: number | null;
+    };
+    expect(row.status).toBe("pendiente");
+    expect(row.price_paid).toBeNull();
+  });
+});
