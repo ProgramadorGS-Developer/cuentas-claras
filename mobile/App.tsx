@@ -2,6 +2,7 @@ import { StatusBar } from "expo-status-bar";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { NavigationContainer } from "@react-navigation/native";
 import { RootNavigator } from "@/navigation/RootNavigator";
+import { linking } from "@/navigation/linking";
 import { initDatabase } from "@/database";
 import { useEffect, useState } from "react";
 import { View, ActivityIndicator } from "react-native";
@@ -26,7 +27,7 @@ export default function App() {
 
   return (
     <SafeAreaProvider>
-      <NavigationContainer>
+      <NavigationContainer linking={linking}>
         <RootNavigator />
       </NavigationContainer>
       <StatusBar style="auto" />

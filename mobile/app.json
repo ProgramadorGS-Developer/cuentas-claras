@@ -3,6 +3,7 @@
     "name": "CuentasClaras",
     "slug": "cuentas-claras",
     "owner": "cuentasclaras",
+    "scheme": "cuentasclaras",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { StyleSheet, View } from "react-native";
+import { KeyboardAvoidingView, Platform, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { RootStackParamList } from "@/navigation/types";
@@ -37,7 +37,16 @@ export function EnterNameScreen({ route, navigation }: Props) {
       // llega al backend y reservar/liberar/comprar ítems falla con 404 (ver
       // docs/12-diseno-concurrencia-de-reserva.md).
       const { data: participant } = await participantApi.register(sessionId, name.trim());
-      await userRepository.upsert(participant);
+
+      // Cachear localmente en su propio try/catch: si esto falla (ej. SQLite no existe en el
+      // preview web) NO debe mostrarse como si el registro en el servidor hubiera fallado —
+      // ya tuvo éxito en ese momento. En el dispositivo real esto sí persiste.
+      try {
+        await userRepository.upsert(participant);
+      } catch {
+        // Falla esperable en el preview web; en el dispositivo real persiste sin problema.
+      }
+
       setUser(participant.id, participant.name, participant.isHost);
       navigation.replace("Tabs");
     } catch (e: any) {
@@ -53,27 +62,44 @@ export function EnterNameScreen({ route, navigation }: Props) {
   return (
     <SafeAreaView style={styles.screen} edges={["top", "bottom"]}>
       <AppHeader onBack={() => navigation.goBack()} />
-      <View style={styles.container}>
-        <AppText variant="h2" style={{ marginBottom: spacing.md }}>
-          ¿Cómo te llamás?
-        </AppText>
-        <AppTextInput
-          placeholder="Tu nombre"
-          value={name}
-          onChangeText={(t) => {
-            setName(t);
-            setError(null);
-          }}
-          style={{ marginBottom: spacing.md, width: "100%" }}
-          autoFocus
-        />
-        {error ? (
-          <AppText variant="caption" style={{ color: colors.danger, marginBottom: spacing.sm }}>
-            {error}
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 80 : 0}
+      >
+        <View style={styles.container}>
+          <AppText variant="h2" style={{ marginBottom: spacing.md }}>
+            ¿Cómo te llamás?
           </AppText>
-        ) : null}
-        <AppButton label="Continuar" onPress={handleContinue} disabled={loading} />
-      </View>
+          <AppText variant="caption" style={{ color: colors.textMuted, marginBottom: spacing.lg, textAlign: "center" }}>
+            Con eso alcanza para identificarte en la sesión, nada más.
+          </AppText>
+          <AppTextInput
+            placeholder="Tu nombre"
+            value={name}
+            onChangeText={(t) => {
+              setName(t);
+              setError(null);
+            }}
+            style={{ marginBottom: spacing.md, width: "100%" }}
+            autoFocus
+            autoCapitalize="words"
+            returnKeyType="done"
+            onSubmitEditing={handleContinue}
+            editable={!loading}
+          />
+          {error ? (
+            <AppText variant="caption" style={{ color: colors.danger, marginBottom: spacing.sm }}>
+              {error}
+            </AppText>
+          ) : null}
+          <AppButton
+            label={loading ? "Ingresando..." : "Continuar"}
+            onPress={handleContinue}
+            disabled={loading}
+          />
+        </View>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }

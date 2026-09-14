@@ -1,4 +1,5 @@
 import { useState } from "react";
+import * as Linking from "expo-linking";
 import { Platform, Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { AppText } from "@/components/common/AppText";
@@ -97,7 +98,10 @@ export function NewSessionScreen() {
       setUser(session.hostId, hostName, true);
 
       if (shareViaWhatsApp) {
-        const shareUrl = `cuentasclaras://join?token=${session.shareToken}`;
+        // Linking.createURL resuelve al prefijo correcto según el contexto (cuentasclaras://
+        // en build standalone, exp://<ip>:<puerto>/--/ en Expo Go) — ver navigation/linking.ts.
+        // Un link armado a mano con el scheme fijo no lo puede abrir nadie corriendo en Expo Go.
+        const shareUrl = Linking.createURL("join", { queryParams: { token: session.shareToken } });
         await shareSessionLinkViaWhatsApp(shareUrl, session.name);
       }
 
