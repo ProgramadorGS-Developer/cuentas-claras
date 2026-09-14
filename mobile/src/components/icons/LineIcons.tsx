@@ -214,6 +214,41 @@ export function CheckIcon({ size = 14, color = "#1A1A1A" }: IconProps) {
   );
 }
 
+export function CameraIcon({ size = 22, color = "#1A1A1A" }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Path
+        d="M4 8.5A1.5 1.5 0 0 1 5.5 7h2l1-1.8A1 1 0 0 1 9.4 4.7h5.2a1 1 0 0 1 .9.5l1 1.8h2A1.5 1.5 0 0 1 20 8.5v9A1.5 1.5 0 0 1 18.5 19h-13A1.5 1.5 0 0 1 4 17.5v-9Z"
+        stroke={color}
+        strokeWidth={1.6}
+        strokeLinejoin="round"
+      />
+      <Circle cx="12" cy="12.5" r="3.3" stroke={color} strokeWidth={1.6} />
+    </Svg>
+  );
+}
+
+export function ImageIcon({ size = 22, color = "#1A1A1A" }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Path
+        d="M5 4.5h14A1.5 1.5 0 0 1 20.5 6v12a1.5 1.5 0 0 1-1.5 1.5H5A1.5 1.5 0 0 1 3.5 18V6A1.5 1.5 0 0 1 5 4.5Z"
+        stroke={color}
+        strokeWidth={1.6}
+        strokeLinejoin="round"
+      />
+      <Circle cx="8.3" cy="9" r="1.6" stroke={color} strokeWidth={1.5} />
+      <Path
+        d="m4.5 16 4.7-4.7a1.5 1.5 0 0 1 2.1 0L15 15l1.4-1.4a1.5 1.5 0 0 1 2.1 0l1.5 1.5"
+        stroke={color}
+        strokeWidth={1.6}
+        strokeLinejoin="round"
+        strokeLinecap="round"
+      />
+    </Svg>
+  );
+}
+
 export function ReceiptIcon({ size = 24, color = "#1A1A1A" }: IconProps) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">

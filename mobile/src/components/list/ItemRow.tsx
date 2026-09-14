@@ -4,6 +4,7 @@ import { ItemStatusBadge } from "./ItemStatusBadge";
 import { ShoppingItem } from "@/domain/models";
 import { colors } from "@/theme/colors";
 import { spacing } from "@/theme/spacing";
+import { formatCurrency } from "@/utils/formatters";
 
 interface Props {
   item: ShoppingItem;
@@ -32,8 +33,13 @@ export function ItemRow({ item, participantId, pending, onPress, onReserve, onRe
             {subtitle}
           </AppText>
         ) : null}
-        <View style={{ marginTop: 4 }}>
+        <View style={styles.badgeRow}>
           <ItemStatusBadge status={item.status} />
+          {isPurchased && item.pricePaid != null ? (
+            <AppText variant="caption" style={styles.priceTag}>
+              {formatCurrency(item.pricePaid)}
+            </AppText>
+          ) : null}
         </View>
       </View>
 
@@ -70,6 +76,8 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   muted: { color: colors.textMuted, marginBottom: 2 },
+  badgeRow: { flexDirection: "row", alignItems: "center", gap: spacing.sm, marginTop: 4 },
+  priceTag: { color: colors.primaryDark, fontWeight: "700" },
   actionButton: {
     minWidth: 84,
     alignItems: "center",
