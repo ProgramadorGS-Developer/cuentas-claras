@@ -61,3 +61,18 @@ export interface SettlementTransfer {
   toParticipantId: string;
   amount: number;
 }
+
+// Payload de GET /sessions/:id/result y /sessions/shared/:shareToken/result — mismo shape
+// que server/src/services/balance.service.ts (SessionResult), fuente de verdad del balance.
+export interface SessionTotals {
+  spent: number;
+  contributed: number;
+  noBudgetLoaded: boolean;
+}
+
+export interface SessionResult {
+  sessionId: string;
+  totals: SessionTotals;
+  balances: BalanceEntry[];
+  transfers: SettlementTransfer[];
+}
