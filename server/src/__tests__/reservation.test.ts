@@ -191,3 +191,41 @@ describe("POST /items/:itemId/purchase — validación de pricePaid", () => {
     expect(row.price_paid).toBeNull();
   });
 });
+
+// 1.1.2.3 — Módulo de observaciones por ítem. RF-10.
+// El campo es de solo lectura para el cliente: lo arma el propio backend al reservar/liberar
+// ("Reservado por <nombre>" / null), no hay endpoint de edición libre (ver docs/07 Fase 2, punto 5).
+describe("observation (RF-10)", () => {
+  function observation(itemId: string): string | null {
+    return (db.prepare("SELECT observation FROM items WHERE id = ?").get(itemId) as { observation: string | null })
+      .observation;
+  }
+
+  it("al reservar, la observación queda en 'Reservado por <nombre>' y se ve en la respuesta y en el listado", async () => {
+    const { sessionId, itemId, participantIds } = seed();
+    const [p1] = participantIds;
+
+    const reserveRes = await request(app).post(`/items/${itemId}/reserve`).send({ participantId: p1 });
+    expect(reserveRes.body.observation).toBe("Reservado por P1");
+    expect(observation(itemId)).toBe("Reservado por P1");
+
+    const listRes = await request(app).get(`/sessions/${sessionId}/items`);
+    expect(listRes.body.find((i: { id: string }) => i.id === itemId).observation).toBe("Reservado por P1");
+  });
+
+  it("al liberar, la observación se limpia (null)", async () => {
+    const { itemId, participantIds } = seed();
+    const [p1] = participantIds;
+    await request(app).post(`/items/${itemId}/reserve`).send({ participantId: p1 });
+
+    const releaseRes = await request(app).post(`/items/${itemId}/release`).send({ participantId: p1 });
+    expect(releaseRes.body.observation).toBeNull();
+    expect(observation(itemId)).toBeNull();
+  });
+
+  it("un ítem nunca reservado no tiene observación", async () => {
+    const { sessionId, itemId } = seed();
+    const listRes = await request(app).get(`/sessions/${sessionId}/items`);
+    expect(listRes.body.find((i: { id: string }) => i.id === itemId).observation).toBeNull();
+  });
+});
