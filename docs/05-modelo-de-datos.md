@@ -130,6 +130,28 @@ empareja al mayor deudor con el mayor acreedor hasta saldar todas las
 cuentas con el menor número posible de transferencias
 (`simplifySettlement`).
 
+**Tiempo real (EDT 1.1.4.2).** El servidor recalcula el resultado y lo
+difunde por Socket.IO con el evento `result:updated` a `session:<id>` tras
+cualquier cambio que lo afecte: una compra con precio
+(`POST /items/:itemId/purchase`) o un aporte de presupuesto
+(`POST /sessions/:sessionId/budget`). El payload es el resultado completo
+—`{ sessionId, totals, balances, transfers }`, el mismo que devuelve
+`GET /sessions/:sessionId/result`— para que el cliente no tenga que
+recalcular. `POST /sessions/:sessionId/budget` valida el monto (número
+`> 0`, `<= 999999.99`, hasta 2 decimales) y que el participante pertenezca
+a la sesión.
+
+**Compartir el resultado (EDT 1.1.4.3, RF-16 / CU-04 A1).**
+`GET /sessions/shared/:shareToken/result` devuelve el resultado de una
+sesión sin login: el `share_token` es la capacidad de acceso (ver
+`04-arquitectura.md` §4.5), la misma que el link de invitación. Es solo
+lectura y el balance se calcula en vivo (no hay snapshot persistido); una
+sesión cerrada sigue exponiendo su resultado final. Respuesta:
+`{ session: { name, hostName, closedAt }, result, deepLink, shareText }`,
+donde `deepLink` es `cuentasclaras://result?token=<share_token>` y
+`shareText` es el resumen de texto plano (con nombres, no IDs) listo para
+el *Share sheet* nativo.
+
 ## 5.4 "Gastos en reunión" (RF-15)
 
 No requiere persistencia de sesión: es una calculadora rápida

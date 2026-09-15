@@ -8,7 +8,9 @@ import {
   listItems,
   serializeItem,
 } from "../services/reservation.service";
-import { broadcastItemUpdated } from "../sockets/broadcast";
+import { broadcastItemUpdated, broadcastResultUpdated } from "../sockets/broadcast";
+import { computeSessionResult } from "../services/balance.service";
+import { esMontoValido } from "../utils/money";
 
 // RF-05..RF-12: consulta de ítems, reserva/liberación atómica y marcar como comprado.
 // El arbitraje de reserva se resuelve acá por REST (una respuesta 200/409 por intento),
@@ -61,9 +63,13 @@ export const itemsController = {
     const { participantId, pricePaid } = req.body as { participantId: string; pricePaid: number };
 
     if (!participantId) return res.status(400).json({ error: "Falta participantId" });
-    if (typeof pricePaid !== "number" || pricePaid <= 0) {
-      // A2 (CU-03): precio inválido.
-      return res.status(400).json({ error: "El precio debe ser un número positivo" });
+
+    // A2 (CU-03): precio inválido. Se acepta 0 a propósito: un invitado puede
+    // donar/regalar un ítem y registrarlo con precio pagado 0.
+    if (!esMontoValido(pricePaid)) {
+      return res.status(400).json({
+        error: "Precio inválido: debe ser un número entre 0 y 999999.99, con hasta 2 decimales",
+      });
     }
 
     const result = purchaseItem(itemId, participantId, pricePaid);
@@ -73,7 +79,10 @@ export const itemsController = {
       return res.status(409).json({ error: "Solo quien tiene la reserva puede marcar el ítem como comprado (RF-07)" });
     }
 
-    broadcastItemUpdated(getIo(req), result.item);
+    const io = getIo(req);
+    broadcastItemUpdated(io, result.item);
+    // La compra cambió el gasto del participante: se difunde el balance recalculado (1.1.4.2).
+    broadcastResultUpdated(io, computeSessionResult(result.item.session_id));
     res.json(serializeItem(result.item));
   },
 

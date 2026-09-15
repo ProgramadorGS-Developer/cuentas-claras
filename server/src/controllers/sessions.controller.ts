@@ -2,9 +2,10 @@ import { Request, Response } from "express";
 import type { Server as SocketServer } from "socket.io";
 import { v4 as uuid } from "uuid";
 import { db } from "../db/connection";
-import { generateShareToken } from "../services/whatsappLink.service";
+import { generateShareToken, buildResultDeepLink } from "../services/whatsappLink.service";
 import { findSession, updateSession, closeSession, serializeSession } from "../services/sessions.service";
 import { broadcastSessionClosed } from "../sockets/broadcast";
+import { computeSessionResult, buildResultShareText } from "../services/balance.service";
 
 // RF-03/RF-04: CRUD de sesiones (EDT 1.1.2.1).
 export const sessionsController = {
@@ -30,7 +31,10 @@ export const sessionsController = {
       insertItem.run(uuid(), sessionId, itemName, now);
     }
 
-    res.status(201).json({ id: sessionId, name, hostName, createdAt: now, closedAt: null, shareToken });
+    // hostId: el cliente lo necesita para poder reservar/liberar/comprar ítems como anfitrión
+    // (ver docs/12-diseno-concurrencia-de-reserva.md) — sin esto, el id de participante del
+    // anfitrión solo existe acá y toda acción sobre ítems le devolvería 404.
+    res.status(201).json({ id: sessionId, name, hostName, createdAt: now, closedAt: null, shareToken, hostId });
   },
 
   getByToken(req: Request, res: Response) {
@@ -87,6 +91,26 @@ export const sessionsController = {
 
     broadcastSessionClosed(getIo(req), result.session);
     res.json(serializeSession(result.session));
+  },
+
+  // RF-16 / CU-04 A1 / EDT 1.1.4.3: resultado de una sesión accesible por su share_token,
+  // sin login (el token es la capacidad de acceso, igual que el link de invitación). Solo lectura.
+  // Balance en vivo: no se persiste un snapshot (ver docs/05-modelo-de-datos.md §5.3).
+  getSharedResult(req: Request, res: Response) {
+    const { shareToken } = req.params;
+    const session = db.prepare("SELECT * FROM sessions WHERE share_token = ?").get(shareToken) as any;
+    if (!session) {
+      return res.status(404).json({ error: "Sesión no encontrada o link inválido" });
+    }
+
+    const result = computeSessionResult(session.id);
+    const deepLink = buildResultDeepLink(shareToken);
+    res.json({
+      session: { name: session.name, hostName: session.host_name, closedAt: session.closed_at },
+      result,
+      deepLink,
+      shareText: buildResultShareText(result, session.name, deepLink),
+    });
   },
 };
 

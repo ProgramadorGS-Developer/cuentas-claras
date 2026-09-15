@@ -11,6 +11,8 @@ sessionsRouter.get("/sessions/by-token/:token", sessionsController.getByToken);
 sessionsRouter.get("/sessions/:sessionId", sessionsController.getById);
 sessionsRouter.patch("/sessions/:sessionId", sessionsController.update);
 sessionsRouter.post("/sessions/:sessionId/close", sessionsController.close);
+// RF-16 / EDT 1.1.4.3: pantalla de resultado compartible por el share_token (sin login).
+sessionsRouter.get("/sessions/shared/:shareToken/result", sessionsController.getSharedResult);
 sessionsRouter.get("/sessions/:sessionId/items", itemsController.listBySession);
 sessionsRouter.post("/sessions/:sessionId/budget", budgetController.contribute);
 sessionsRouter.get("/sessions/:sessionId/result", budgetController.getResult);

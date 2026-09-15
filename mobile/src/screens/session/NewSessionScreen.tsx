@@ -1,4 +1,5 @@
 import { useState } from "react";
+import * as Linking from "expo-linking";
 import { Platform, Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { AppText } from "@/components/common/AppText";
@@ -14,9 +15,9 @@ import { sessionRepository } from "@/database/repositories/sessionRepository";
 import { userRepository } from "@/database/repositories/userRepository";
 import { itemRepository } from "@/database/repositories/itemRepository";
 import { useUserStore } from "@/store/userStore";
+import { useSessionStore } from "@/store/sessionStore";
 import { useNavigation } from "@react-navigation/native";
 import { shareSessionLinkViaWhatsApp } from "@/services/whatsapp/shareLink";
-import { generateId } from "@/utils/idGenerator";
 
 // Sugerencias genéricas de compra grupal: no atadas a un solo tipo de evento (asado),
 // para que sirvan también en previas, viajes u otras juntadas.
@@ -35,6 +36,8 @@ const SUGGESTED_ITEMS = [
 export function NewSessionScreen() {
   const navigation = useNavigation<any>();
   const setUser = useUserStore((s) => s.setUser);
+  const setSession = useSessionStore((s) => s.setSession);
+  const setParticipants = useSessionStore((s) => s.setParticipants);
   const [sessionName, setSessionName] = useState("");
   const [hostName, setHostName] = useState("");
   const [items, setItems] = useState<string[]>([]);
@@ -76,17 +79,25 @@ export function NewSessionScreen() {
       // no puede mostrar la sesión recién creada porque siempre lee de SQLite local, nunca del
       // server. Se aísla en su propio try/catch: SQLite no existe en el preview web (expo-sqlite
       // no soporta web), así que ahí fallaría, pero eso no debe frenar la creación de la sesión.
-      let hostId: string | null = null;
+      // hostId viene del servidor (no se genera acá): es el id real del participante-anfitrión
+      // ya creado en la tabla `participants` al crear la sesión — usar otro id distinto hace que
+      // reservar/liberar/comprar como anfitrión falle con 404 (ver docs/12-diseno-concurrencia...).
+      const host = {
+        id: session.hostId,
+        sessionId: session.id,
+        name: hostName,
+        isHost: true,
+        joinedAt: session.createdAt,
+      };
+      // Puebla el store global de la sesión activa (Zustand, en memoria): sin esto,
+      // ShoppingListScreen/BudgetScreen/useBalance no saben en qué sesión está parado el
+      // anfitrión. Va SIEMPRE, sin depender de que el cacheo en SQLite (abajo) tenga éxito.
+      setSession(session);
+      setParticipants([host]);
+
       try {
         await sessionRepository.upsert(session);
-        hostId = await generateId();
-        await userRepository.upsert({
-          id: hostId,
-          sessionId: session.id,
-          name: hostName,
-          isHost: true,
-          joinedAt: session.createdAt,
-        });
+        await userRepository.upsert(host);
         const { data: serverItems } = await itemApi.listBySession(session.id);
         for (const item of serverItems) {
           await itemRepository.upsert(item);
@@ -94,10 +105,13 @@ export function NewSessionScreen() {
       } catch {
         // Falla esperable en el preview web (sin SQLite nativo); en el dispositivo real persiste.
       }
-      setUser(hostId ?? session.id, hostName, true);
+      setUser(session.hostId, hostName, true);
 
       if (shareViaWhatsApp) {
-        const shareUrl = `cuentasclaras://join?token=${session.shareToken}`;
+        // Linking.createURL resuelve al prefijo correcto según el contexto (cuentasclaras://
+        // en build standalone, exp://<ip>:<puerto>/--/ en Expo Go) — ver navigation/linking.ts.
+        // Un link armado a mano con el scheme fijo no lo puede abrir nadie corriendo en Expo Go.
+        const shareUrl = Linking.createURL("join", { queryParams: { token: session.shareToken } });
         await shareSessionLinkViaWhatsApp(shareUrl, session.name);
       }
 
