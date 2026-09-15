@@ -1,11 +1,10 @@
-import { FlatList, StyleSheet, View } from "react-native";
+import { FlatList, Pressable, StyleSheet, View } from "react-native";
 import { AppText } from "@/components/common/AppText";
 import { StatusPill } from "@/components/common/StatusPill";
 import { ReceiptIcon } from "@/components/icons/LineIcons";
 import { colors } from "@/theme/colors";
 import { spacing } from "@/theme/spacing";
 import { useNavigation } from "@react-navigation/native";
-import { Pressable } from "react-native";
 import { formatCurrency, formatDateTime } from "@/utils/formatters";
 import { useHomeDashboard } from "@/hooks/useHomeDashboard";
 import { goToSession } from "@/navigation/goToSession";
