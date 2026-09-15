@@ -97,8 +97,7 @@ export function NewSessionScreen() {
       setUser(hostId ?? session.id, hostName, true);
 
       if (shareViaWhatsApp) {
-        const shareUrl = `cuentasclaras://join?token=${session.shareToken}`;
-        await shareSessionLinkViaWhatsApp(shareUrl, session.name);
+        await shareSessionLinkViaWhatsApp(session.joinUrl, session.name);
       }
 
       navigation.replace("Tabs");

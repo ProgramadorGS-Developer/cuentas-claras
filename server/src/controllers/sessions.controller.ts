@@ -1,7 +1,9 @@
 import { Request, Response } from "express";
 import { v4 as uuid } from "uuid";
 import { db } from "../db/connection";
-import { generateShareToken } from "../services/whatsappLink.service";
+import { generateShareToken, buildSessionJoinUrl, buildSessionDeepLink } from "../services/whatsappLink.service";
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 // RF-03/RF-04: CRUD de sesiones (EDT 1.1.2.1).
 export const sessionsController = {
@@ -27,7 +29,30 @@ export const sessionsController = {
       insertItem.run(uuid(), sessionId, itemName, now);
     }
 
-    res.status(201).json({ id: sessionId, name, hostName, createdAt: now, closedAt: null, shareToken });
+    res.status(201).json({
+      id: sessionId,
+      name,
+      hostName,
+      createdAt: now,
+      closedAt: null,
+      shareToken,
+      joinUrl: buildSessionJoinUrl(shareToken),
+    });
+  },
+
+  // EDT 1.1.1.1: puente para el link compartido por WhatsApp (que solo linkea http/https) ->
+  // redirige al esquema nativo que abre la app directo en la sesión correspondiente.
+  joinRedirect(req: Request, res: Response) {
+    const { token } = req.params;
+    if (!UUID_RE.test(token)) {
+      return res.status(400).send("Link inválido");
+    }
+    const deepLink = buildSessionDeepLink(token);
+    res.type("html").send(
+      `<!DOCTYPE html><html><head><meta http-equiv="refresh" content="0; url=${deepLink}" />` +
+        `<script>location.href=${JSON.stringify(deepLink)};</script></head>` +
+        `<body>Abriendo CuentasClaras…</body></html>`,
+    );
   },
 
   getByToken(req: Request, res: Response) {
