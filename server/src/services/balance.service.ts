@@ -63,11 +63,22 @@ export function computeSessionResult(sessionId: string): SessionResult {
   const totalContributed = contributions.reduce((sum, c) => sum + c.amount, 0);
   const noBudgetLoaded = totalContributed === 0;
 
+  // Agrupar una sola vez (O(I+C)) en vez de filtrar items/contributions por cada
+  // participante (O(P×(I+C))): con el índice idx_budget_contributions_session esto
+  // ya no bloquea el event loop a medida que crecen las sesiones (EDT 1.3.1.2/1.1.4.2).
+  const contributedByParticipant = new Map<string, number>();
+  for (const c of contributions) {
+    contributedByParticipant.set(c.participant_id, (contributedByParticipant.get(c.participant_id) ?? 0) + c.amount);
+  }
+  const spentByParticipant = new Map<string, number>();
+  for (const i of items) {
+    if (!i.reserved_by) continue;
+    spentByParticipant.set(i.reserved_by, (spentByParticipant.get(i.reserved_by) ?? 0) + i.price_paid);
+  }
+
   const balances: BalanceEntry[] = participants.map((p) => {
-    const contributed = contributions
-      .filter((c) => c.participant_id === p.id)
-      .reduce((sum, c) => sum + c.amount, 0);
-    const spent = items.filter((i) => i.reserved_by === p.id).reduce((sum, i) => sum + i.price_paid, 0);
+    const contributed = contributedByParticipant.get(p.id) ?? 0;
+    const spent = spentByParticipant.get(p.id) ?? 0;
 
     const fairShare = noBudgetLoaded ? totalSpent / (participants.length || 1) : contributed;
     const net = noBudgetLoaded ? spent - fairShare : contributed - spent;

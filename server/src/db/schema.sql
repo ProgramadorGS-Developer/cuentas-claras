@@ -57,3 +57,4 @@ CREATE TABLE IF NOT EXISTS budget_contributions (
 CREATE INDEX IF NOT EXISTS idx_items_session ON items(session_id);
 CREATE INDEX IF NOT EXISTS idx_participants_session ON participants(session_id);
 CREATE INDEX IF NOT EXISTS idx_reservation_item ON reservation_attempts(item_id);
+CREATE INDEX IF NOT EXISTS idx_budget_contributions_session ON budget_contributions(session_id);
