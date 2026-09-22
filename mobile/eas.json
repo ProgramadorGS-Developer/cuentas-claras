@@ -6,13 +6,16 @@
   "build": {
     "development": {
       "developmentClient": true,
-      "distribution": "internal"
+      "distribution": "internal",
+      "env": { "REACT_NATIVE_DOWNLOADS_DIR": "/tmp/expo-sqlite-downloads" }
     },
     "preview": {
-      "distribution": "internal"
+      "distribution": "internal",
+      "env": { "REACT_NATIVE_DOWNLOADS_DIR": "/tmp/expo-sqlite-downloads" }
     },
     "production": {
-      "autoIncrement": true
+      "autoIncrement": true,
+      "env": { "REACT_NATIVE_DOWNLOADS_DIR": "/tmp/expo-sqlite-downloads" }
     }
   },
   "submit": {
