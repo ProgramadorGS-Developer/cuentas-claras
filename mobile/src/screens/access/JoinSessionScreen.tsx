@@ -56,7 +56,7 @@ export function JoinSessionScreen({ route, navigation }: Props) {
     setJoinError(null);
     try {
       const { data: session } = await sessionApi.getByToken(token);
-      navigation.replace("EnterName", { sessionId: session.id });
+      navigation.replace("EnterName", { sessionId: session.id, session });
     } catch (e) {
       // A1 (CU-01): link inválido o sesión cerrada/vencida.
       setJoinError("Este link ya no es válido. Puede que la sesión haya sido cerrada o haya vencido.");
@@ -193,7 +193,7 @@ function ActiveSessionHero({ summary }: { summary: SessionSummary }) {
         </AppText>
         <Pressable
           style={styles.detailButton}
-          onPress={() => goToSession(navigation, summary.session.id)}
+          onPress={() => goToSession(navigation, summary.session.id, summary.session)}
         >
           <AppText variant="caption" style={styles.detailButtonText}>
             Ver detalle
@@ -225,7 +225,7 @@ function RecentSessionCard({ summary }: { summary: SessionSummary }) {
   return (
     <Pressable
       style={[styles.recentCard, cardShadow]}
-      onPress={() => goToSession(navigation, summary.session.id)}
+      onPress={() => goToSession(navigation, summary.session.id, summary.session)}
     >
       <View style={styles.recentTopRow}>
         <View style={styles.activeIconBubble}>

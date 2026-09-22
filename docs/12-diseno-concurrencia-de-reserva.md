@@ -6,7 +6,7 @@
 | **Requisitos afectados** | RF-05, RF-06, RF-07, RF-08, RF-08a / CU-02, CU-02a |
 | **Estado** | Aprobado por el Tech Lead — base para las fases de Backend y Cliente |
 | **Fecha** | 2026-08-31 (análisis) · 2026-09-01 (aprobación) |
-| **Avance** | Fase 1 implementada (EDT 1.1.2.2 + 1.1.3.3): `server/src/services/reservation.service.ts`, endpoints `POST /items/:id/reserve` y `/release`, `markPurchased()` endurecido, `server/scripts/stress-reserve.ts`. Fases 2–4 pendientes. |
+| **Avance** | Fase 1 implementada (EDT 1.1.2.2 + 1.1.3.3): `server/src/services/reservation.service.ts`, endpoints `POST /items/:id/reserve` y `/release`, `markPurchased()` endurecido, `server/scripts/stress-reserve.ts` (ver reporte de ejecución en `docs/13-reporte-pruebas-estres.md`). Fase 3 implementada (cliente): `mobile/src/hooks/useReservation.ts` migrado al arbitraje por REST, `ReservationConflictModal.tsx` retirado y reemplazado por `ReservationNoticeBanner.tsx` (aviso no bloqueante), botón "Liberar" agregado (RF-06, no tenía UI antes). Fases 2 (modelo de ofrecimiento/traspaso de tarea) y 4 (limpieza de `reservationQueue.service.ts`, eventos `reserve:*`, tabla `reservation_attempts`) siguen pendientes — ver tarjeta 1.1.3.2 en el tablero para la Fase 4. |
 
 > Este documento reemplaza al borrador `analisis-concurrencia-reserva.txt`.
 > Las §12.3 y §12.4 describen el estado del código **previo** a la Fase 1

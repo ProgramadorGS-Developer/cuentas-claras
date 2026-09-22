@@ -382,3 +382,44 @@ MonsterASP.net.
 
 Pendiente: build de iOS (`eas build --platform ios --profile preview`)
 requiere cuenta de Apple Developer, no se hizo en esta sesión.
+
+## Nota operativa — el "Git deploy" de MonsterASP.net NO es automático (2026-09-22)
+
+El nombre de la sección del panel ("Git deploy", tipo "Node.js SSR",
+apuntando a la rama `production`) sugiere que cada `git push` dispara un
+deploy solo, pero no es así. Se detectó el 2026-09-22 que el sitio estaba
+sirviendo el commit `a42e00f` (01/09/2026), **20 días desatrasado**
+respecto a `production` (que ya tenía `840336e` del 16/09 y el merge
+`b41d170` del 21/09) — varios pushes habían quedado sin publicar sin que
+nada fallara ni avisara.
+
+Cómo funciona en realidad: MonsterASP.net clona el repo a una copia de
+staging, pero **solo cuando alguien entra al panel y lo pide**. El flujo
+correcto después de cada push a `production` es, en
+`admin.monsterasp.net` → sitio → **Git deploy**:
+
+1. **Pull latest** — trae el último commit de GitHub a `/.source`
+   (staging). El panel muestra qué commit quedó "staged" y hace cuánto.
+2. **Build & publish** — corre `npm install` + `npm run build` del lado
+   del servidor (con `server\package.json` como proyecto), genera un
+   `web.config` nuevo automáticamente (httpPlatformHandler, start command
+   `.\dist\index.js`) y publica todo (incluido `node_modules`) a
+   `/wwwroot` con `app_offline` + copy.
+
+No hace falta ningún paso manual de FTP ni escribir `web.config` a mano:
+el propio "Build & publish" ya arma y sube todo del lado del servidor,
+usando el mismo `npm run build` (con `tsc` invocado vía `node`, ver
+Limitación 3 más arriba) que ya está resuelto en el repo. Un intento de
+armar el paquete localmente y subirlo por FTP en paralelo se descartó por
+redundante y porque el siguiente "Build & publish" pisaría esos archivos
+igual (o viceversa).
+
+**Verificado:** tras Pull latest + Build & publish del `b41d170`, el build
+terminó en "Success" y `curl https://cuentasclaras.runasp.net/sessions`
+siguió respondiendo 200 con datos reales — el runtime del hosting soporta
+`node:sqlite` sin necesidad del flag `--experimental-sqlite`.
+
+**Pendiente a futuro (EDT 1.3.4.1, "deploy sin intervención manual"):**
+MonsterASP.net FreeSite no ofrece (o no se encontró) un webhook que
+dispare Pull + Build automáticamente en cada push; por ahora hay que
+recordar hacerlo a mano después de cada merge a `production`.

@@ -1,0 +1,38 @@
+name: server-ci
+
+# EDT 1.3.4.1. Ver docs/09-despliegue.md §9.4.
+# No dispara deploy: el deploy en MonsterASP.net NO es automático por push,
+# pese al nombre "Git deploy" — hay que entrar al panel (Git deploy) y
+# apretar "Pull latest" + "Build & publish" a mano después de cada push a
+# `production` (ver docs/11-cambios-para-despliegue.md, nota del 2026-09-22).
+# Este workflow es solo el gate de verificación (tipos + tests + build).
+
+on:
+  push:
+    branches: [master, production]
+    paths:
+      - "server/**"
+      - ".github/workflows/server-ci.yml"
+  pull_request:
+    paths:
+      - "server/**"
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: server
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+          cache-dependency-path: server/package-lock.json
+
+      - run: npm ci
+      - run: npx tsc --noEmit
+      - run: npm test
+      - run: npm run build

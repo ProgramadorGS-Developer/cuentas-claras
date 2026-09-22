@@ -4,16 +4,18 @@ import { Linking, Share } from "react-native";
 // backend web original), en la app nativa usamos deep link wa.me y/o el Share sheet del sistema,
 // que ya incluye WhatsApp entre las apps disponibles. Ver docs/04-arquitectura.md.
 
-export async function shareSessionLinkViaWhatsApp(sessionUrl: string, sessionName: string) {
-  const text = encodeURIComponent(`Sumate a la sesión "${sessionName}" en CuentasClaras: ${sessionUrl}`);
-  const waUrl = `https://wa.me/?text=${text}`;
+// El mensaje llega ya armado desde el servidor (sessions.controller.create -> shareText): incluye
+// el link http(s) de invitación —el único que WhatsApp vuelve clickeable— y, debajo, el de descarga
+// de la app. Ver server/src/services/whatsappLink.service.ts.
+export async function shareSessionLinkViaWhatsApp(inviteMessage: string) {
+  const waUrl = `https://wa.me/?text=${encodeURIComponent(inviteMessage)}`;
 
   const canOpen = await Linking.canOpenURL(waUrl);
   if (canOpen) {
     await Linking.openURL(waUrl);
   } else {
     // Fallback: hoja de compartir nativa (funciona sin WhatsApp instalado).
-    await Share.share({ message: decodeURIComponent(text) });
+    await Share.share({ message: inviteMessage });
   }
 }
 

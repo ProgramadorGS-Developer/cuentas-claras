@@ -19,3 +19,28 @@ export function buildSessionDeepLink(shareToken: string): string {
   // Esquema propio registrado en app.json (mobile) para abrir la app directamente.
   return `cuentasclaras://join?token=${shareToken}`;
 }
+
+// URL propia y estable para el APK: redirige a config.apkUrl (ver /descargar en sessions.routes.ts).
+export function buildApkDownloadUrl(): string {
+  return `${config.publicBaseUrl}/descargar`;
+}
+
+// Mensaje listo para compartir por WhatsApp: invitación arriba, instalación abajo. Se arma acá
+// (y no en la app) para que el link y el texto salgan de una sola fuente, igual que
+// buildResultShareText.
+export function buildSessionInviteText(sessionName: string, shareToken: string): string {
+  return [
+    `Sumate a la sesión "${sessionName}" en CuentasClaras:`,
+    buildSessionJoinUrl(shareToken),
+    "",
+    "Si todavía no tenés la app instalada, descargala acá:",
+    buildApkDownloadUrl(),
+  ].join("\n");
+}
+
+// RF-16 / CU-04 A1 / EDT 1.1.4.3: link para compartir la pantalla de resultado.
+// Reutiliza el share_token de la sesión (misma capacidad de acceso que el link de invitación,
+// consistente con docs/04-arquitectura.md §4.5). Abre la app en la pantalla de Resultado (read-only).
+export function buildResultDeepLink(shareToken: string): string {
+  return `cuentasclaras://result?token=${shareToken}`;
+}

@@ -4,6 +4,8 @@ import { userRepository } from "@/database/repositories/userRepository";
 import { itemRepository } from "@/database/repositories/itemRepository";
 import { Session } from "@/domain/models";
 import { StatusPillVariant } from "@/components/common/StatusPill";
+import { joinSessionRoom } from "@/services/realtime/socket";
+import { onSessionClosed } from "@/services/realtime/sessionEvents";
 
 export interface SessionSummary {
   session: Session;
@@ -14,11 +16,14 @@ export interface SessionSummary {
   statusLabel: string;
 }
 
+// Importante: las consultas a SQLite van SIEMPRE en serie (nunca Promise.all entre ellas).
+// expo-sqlite en Android no tolera bien múltiples queries concurrentes sobre la misma
+// conexión — dispararlas en paralelo puede colgar el hilo nativo (se vio como "la app se
+// congela sola a los pocos segundos" en dispositivo real; en web no aparece porque ahí
+// SQLite ni siquiera está disponible).
 async function summarize(session: Session, isFeatured: boolean): Promise<SessionSummary> {
-  const [participants, items] = await Promise.all([
-    userRepository.listBySession(session.id),
-    itemRepository.listBySession(session.id),
-  ]);
+  const participants = await userRepository.listBySession(session.id);
+  const items = await itemRepository.listBySession(session.id);
   const totalSpent = items
     .filter((i) => i.status === "comprado" && i.pricePaid != null)
     .reduce((sum, i) => sum + (i.pricePaid ?? 0), 0);
@@ -40,23 +45,47 @@ export function useHomeDashboard() {
 
   const refresh = useCallback(async () => {
     setLoading(true);
-    const sessions = await sessionRepository.listAll();
-    const activeSession = sessions.find((s) => !s.closedAt) ?? null;
-    const otherSessions = sessions.filter((s) => s.id !== activeSession?.id).slice(0, 5);
+    try {
+      const sessions = await sessionRepository.listAll();
+      const activeSession = sessions.find((s) => !s.closedAt) ?? null;
+      const otherSessions = sessions.filter((s) => s.id !== activeSession?.id).slice(0, 5);
 
-    const [activeSummary, recentSummaries] = await Promise.all([
-      activeSession ? summarize(activeSession, true) : Promise.resolve(null),
-      Promise.all(otherSessions.map((s) => summarize(s, false))),
-    ]);
+      const activeSummary = activeSession ? await summarize(activeSession, true) : null;
+      const recentSummaries: SessionSummary[] = [];
+      for (const s of otherSessions) {
+        recentSummaries.push(await summarize(s, false));
+      }
 
-    setActive(activeSummary);
-    setRecent(recentSummaries);
-    setLoading(false);
+      setActive(activeSummary);
+      setRecent(recentSummaries);
+    } catch {
+      // Sin caché local todavía (o SQLite no disponible, ej. preview web): dashboard vacío.
+      setActive(null);
+      setRecent([]);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => {
     refresh();
   }, [refresh]);
+
+  // RF-04: si el anfitrión cierra la sesión desde otro dispositivo, este Home lo refleja
+  // sin esperar a que el usuario reabra la app (ver server/src/sockets/broadcast.ts).
+  const activeSessionId = active?.session.id;
+  useEffect(() => {
+    if (!activeSessionId) return;
+    joinSessionRoom(activeSessionId);
+
+    const unsubscribe = onSessionClosed(async (raw) => {
+      if (raw.id !== activeSessionId) return;
+      await sessionRepository.upsert(raw);
+      refresh();
+    });
+
+    return unsubscribe;
+  }, [activeSessionId, refresh]);
 
   return { loading, active, recent, refresh };
 }

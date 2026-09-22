@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { v4 as uuid } from "uuid";
 import { db } from "../db/connection";
+import { findSession } from "../services/sessions.service";
 
 export const usersRouter = Router();
 
@@ -12,10 +13,10 @@ usersRouter.post("/sessions/:sessionId/participants", (req, res) => {
   if (!name || name.trim().length < 2) {
     return res.status(400).json({ error: "El nombre es obligatorio" });
   }
-// Validar que la sesión exista y que no esté cerrada. Pablo Casi
-  const session = db.prepare("SELECT id, closed_at FROM sessions WHERE id = ?").get(sessionId) as
-    | { id: string; closed_at: string | null }
-    | undefined;
+
+  // Reusa sessions.service.ts para no duplicar el criterio de "sesión abierta"
+  // (antes era una query propia acá, que podía desincronizarse de closeSession()).
+  const session = findSession(sessionId);
   if (!session) {
     return res.status(404).json({ error: "Sesión no encontrada" });
   }

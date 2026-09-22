@@ -139,3 +139,93 @@ describe("POST /items/:itemId/purchase", () => {
     );
   });
 });
+
+// 1.1.4.1 — Validación de precios pagados. RF-11 / CU-03 A2.
+describe("POST /items/:itemId/purchase — validación de pricePaid", () => {
+  async function reservedItem() {
+    const { itemId, participantIds } = seed();
+    const [p1] = participantIds;
+    await request(app).post(`/items/${itemId}/reserve`).send({ participantId: p1 });
+    return { itemId, p1 };
+  }
+
+  it("acepta pricePaid 0: un invitado dona/regala el ítem (200)", async () => {
+    const { itemId, p1 } = await reservedItem();
+    const res = await request(app).post(`/items/${itemId}/purchase`).send({ participantId: p1, pricePaid: 0 });
+    expect(res.status).toBe(200);
+    expect(res.body.status).toBe("comprado");
+    expect(res.body.pricePaid).toBe(0);
+  });
+
+  it("acepta el límite superior 999999.99 (200)", async () => {
+    const { itemId, p1 } = await reservedItem();
+    const res = await request(app).post(`/items/${itemId}/purchase`).send({ participantId: p1, pricePaid: 999999.99 });
+    expect(res.status).toBe(200);
+    expect(res.body.pricePaid).toBe(999999.99);
+  });
+
+  it("acepta dos decimales exactos sin falso rechazo por punto flotante (200)", async () => {
+    const { itemId, p1 } = await reservedItem();
+    const res = await request(app).post(`/items/${itemId}/purchase`).send({ participantId: p1, pricePaid: 19.99 });
+    expect(res.status).toBe(200);
+    expect(res.body.pricePaid).toBe(19.99);
+  });
+
+  it.each([
+    ["negativo", -1],
+    ["mayor al límite", 1_000_000],
+    ["con más de 2 decimales", 10.999],
+    ["no numérico (string)", "100"],
+    ["faltante", undefined],
+    ["null", null],
+  ])("rechaza precio %s (400) y deja el ítem pendiente", async (_caso, pricePaid) => {
+    const { itemId, p1 } = await reservedItem();
+    const res = await request(app).post(`/items/${itemId}/purchase`).send({ participantId: p1, pricePaid });
+    expect(res.status).toBe(400);
+    expect(reservedBy(itemId)).toBe(p1);
+    const row = db.prepare("SELECT status, price_paid FROM items WHERE id = ?").get(itemId) as {
+      status: string;
+      price_paid: number | null;
+    };
+    expect(row.status).toBe("pendiente");
+    expect(row.price_paid).toBeNull();
+  });
+});
+
+// 1.1.2.3 — Módulo de observaciones por ítem. RF-10.
+// El campo es de solo lectura para el cliente: lo arma el propio backend al reservar/liberar
+// ("Reservado por <nombre>" / null), no hay endpoint de edición libre (ver docs/07 Fase 2, punto 5).
+describe("observation (RF-10)", () => {
+  function observation(itemId: string): string | null {
+    return (db.prepare("SELECT observation FROM items WHERE id = ?").get(itemId) as { observation: string | null })
+      .observation;
+  }
+
+  it("al reservar, la observación queda en 'Reservado por <nombre>' y se ve en la respuesta y en el listado", async () => {
+    const { sessionId, itemId, participantIds } = seed();
+    const [p1] = participantIds;
+
+    const reserveRes = await request(app).post(`/items/${itemId}/reserve`).send({ participantId: p1 });
+    expect(reserveRes.body.observation).toBe("Reservado por P1");
+    expect(observation(itemId)).toBe("Reservado por P1");
+
+    const listRes = await request(app).get(`/sessions/${sessionId}/items`);
+    expect(listRes.body.find((i: { id: string }) => i.id === itemId).observation).toBe("Reservado por P1");
+  });
+
+  it("al liberar, la observación se limpia (null)", async () => {
+    const { itemId, participantIds } = seed();
+    const [p1] = participantIds;
+    await request(app).post(`/items/${itemId}/reserve`).send({ participantId: p1 });
+
+    const releaseRes = await request(app).post(`/items/${itemId}/release`).send({ participantId: p1 });
+    expect(releaseRes.body.observation).toBeNull();
+    expect(observation(itemId)).toBeNull();
+  });
+
+  it("un ítem nunca reservado no tiene observación", async () => {
+    const { sessionId, itemId } = seed();
+    const listRes = await request(app).get(`/sessions/${sessionId}/items`);
+    expect(listRes.body.find((i: { id: string }) => i.id === itemId).observation).toBeNull();
+  });
+});

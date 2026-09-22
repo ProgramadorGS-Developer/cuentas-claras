@@ -1,11 +1,10 @@
-import { FlatList, StyleSheet, View } from "react-native";
+import { FlatList, Pressable, StyleSheet, View } from "react-native";
 import { AppText } from "@/components/common/AppText";
 import { StatusPill } from "@/components/common/StatusPill";
 import { ReceiptIcon } from "@/components/icons/LineIcons";
 import { colors } from "@/theme/colors";
 import { spacing } from "@/theme/spacing";
 import { useNavigation } from "@react-navigation/native";
-import { Pressable } from "react-native";
 import { formatCurrency, formatDateTime } from "@/utils/formatters";
 import { useHomeDashboard } from "@/hooks/useHomeDashboard";
 import { goToSession } from "@/navigation/goToSession";
@@ -26,7 +25,7 @@ export function SessionHistoryScreen() {
         renderItem={({ item }) => (
           <Pressable
             style={styles.card}
-            onPress={() => goToSession(navigation, item.session.id)}
+            onPress={() => goToSession(navigation, item.session.id, item.session)}
           >
             <View style={styles.iconBubble}>
               <ReceiptIcon size={20} color={colors.primaryDark} />

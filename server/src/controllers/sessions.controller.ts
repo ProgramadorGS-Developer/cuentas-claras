@@ -1,7 +1,19 @@
 import { Request, Response } from "express";
+import type { Server as SocketServer } from "socket.io";
 import { v4 as uuid } from "uuid";
 import { db } from "../db/connection";
-import { generateShareToken, buildSessionJoinUrl, buildSessionDeepLink } from "../services/whatsappLink.service";
+import { config } from "../config/env";
+import {
+  generateShareToken,
+  buildSessionJoinUrl,
+  buildSessionDeepLink,
+  buildSessionInviteText,
+  buildResultDeepLink,
+} from "../services/whatsappLink.service";
+import { findSession, updateSession, closeSession, serializeSession } from "../services/sessions.service";
+import { broadcastSessionClosed } from "../sockets/broadcast";
+import { computeSessionResult, buildResultShareText } from "../services/balance.service";
+import { renderJoinPage } from "../utils/joinPage";
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -29,6 +41,10 @@ export const sessionsController = {
       insertItem.run(uuid(), sessionId, itemName, now);
     }
 
+    // hostId: el cliente lo necesita para poder reservar/liberar/comprar ítems como anfitrión
+    // (ver docs/12-diseno-concurrencia-de-reserva.md) — sin esto, el id de participante del
+    // anfitrión solo existe acá y toda acción sobre ítems le devolvería 404.
+    // shareText: mensaje de invitación ya armado (link de la sesión + link de descarga del APK).
     res.status(201).json({
       id: sessionId,
       name,
@@ -36,23 +52,40 @@ export const sessionsController = {
       createdAt: now,
       closedAt: null,
       shareToken,
+      hostId,
       joinUrl: buildSessionJoinUrl(shareToken),
+      shareText: buildSessionInviteText(name, shareToken),
     });
   },
 
   // EDT 1.1.1.1: puente para el link compartido por WhatsApp (que solo linkea http/https) ->
-  // redirige al esquema nativo que abre la app directo en la sesión correspondiente.
+  // salta al esquema nativo que abre la app directo en la sesión correspondiente. Si la app no
+  // está instalada el salto no hace nada y la página ofrece la descarga del APK.
   joinRedirect(req: Request, res: Response) {
     const { token } = req.params;
+    const apkUrl = config.apkUrl;
+
     if (!UUID_RE.test(token)) {
-      return res.status(400).send("Link inválido");
+      return res.status(400).type("html").send(renderJoinPage({ apkUrl, error: "Este link no es válido." }));
     }
-    const deepLink = buildSessionDeepLink(token);
+
+    const session = db.prepare("SELECT name FROM sessions WHERE share_token = ?").get(token) as any;
+    if (!session) {
+      return res
+        .status(404)
+        .type("html")
+        .send(renderJoinPage({ apkUrl, error: "Este link ya no es válido: la sesión no existe." }));
+    }
+
     res.type("html").send(
-      `<!DOCTYPE html><html><head><meta http-equiv="refresh" content="0; url=${deepLink}" />` +
-        `<script>location.href=${JSON.stringify(deepLink)};</script></head>` +
-        `<body>Abriendo CuentasClaras…</body></html>`,
+      renderJoinPage({ apkUrl, sessionName: session.name, deepLink: buildSessionDeepLink(token) }),
     );
+  },
+
+  // El APK no lo sirve este server (es un artefacto de EAS): esta URL propia y estable redirige al
+  // build vigente, así los links ya compartidos no quedan muertos al publicar uno nuevo.
+  apkRedirect(_req: Request, res: Response) {
+    res.redirect(302, config.apkUrl);
   },
 
   getByToken(req: Request, res: Response) {
@@ -69,7 +102,72 @@ export const sessionsController = {
     const sessions = db.prepare("SELECT * FROM sessions ORDER BY created_at DESC").all();
     res.json((sessions as any[]).map(toCamel));
   },
+
+  getById(req: Request, res: Response) {
+    const session = findSession(req.params.sessionId);
+    if (!session) return res.status(404).json({ error: "Sesión no encontrada" });
+    res.json(serializeSession(session));
+  },
+
+  // Solo el anfitrión, y solo mientras nadie más se unió (ver sessions.service.ts).
+  update(req: Request, res: Response) {
+    const { participantId, name, items } = req.body as {
+      participantId: string;
+      name?: string;
+      items?: string[];
+    };
+    if (!participantId) return res.status(400).json({ error: "Falta participantId" });
+
+    const result = updateSession(req.params.sessionId, participantId, { name, items });
+    if (!result.ok) {
+      if (result.reason === "not_found") return res.status(404).json({ error: "Sesión no encontrada" });
+      if (result.reason === "not_host") return res.status(403).json({ error: "Solo el anfitrión puede editar la sesión" });
+      return res.status(409).json({ error: "La sesión ya no admite edición: ya se unió otro participante o está cerrada" });
+    }
+
+    res.json(serializeSession(result.session));
+  },
+
+  // RF-04: solo el anfitrión puede cerrar la sesión.
+  close(req: Request, res: Response) {
+    const { participantId } = req.body as { participantId: string };
+    if (!participantId) return res.status(400).json({ error: "Falta participantId" });
+
+    const result = closeSession(req.params.sessionId, participantId);
+    if (!result.ok) {
+      if (result.reason === "not_found") return res.status(404).json({ error: "Sesión no encontrada" });
+      if (result.reason === "not_host") return res.status(403).json({ error: "Solo el anfitrión puede cerrar la sesión" });
+      return res.status(409).json({ error: "La sesión ya estaba cerrada" });
+    }
+
+    broadcastSessionClosed(getIo(req), result.session);
+    res.json(serializeSession(result.session));
+  },
+
+  // RF-16 / CU-04 A1 / EDT 1.1.4.3: resultado de una sesión accesible por su share_token,
+  // sin login (el token es la capacidad de acceso, igual que el link de invitación). Solo lectura.
+  // Balance en vivo: no se persiste un snapshot (ver docs/05-modelo-de-datos.md §5.3).
+  getSharedResult(req: Request, res: Response) {
+    const { shareToken } = req.params;
+    const session = db.prepare("SELECT * FROM sessions WHERE share_token = ?").get(shareToken) as any;
+    if (!session) {
+      return res.status(404).json({ error: "Sesión no encontrada o link inválido" });
+    }
+
+    const result = computeSessionResult(session.id);
+    const deepLink = buildResultDeepLink(shareToken);
+    res.json({
+      session: { name: session.name, hostName: session.host_name, closedAt: session.closed_at },
+      result,
+      deepLink,
+      shareText: buildResultShareText(result, session.name, deepLink),
+    });
+  },
 };
+
+function getIo(req: Request): SocketServer | undefined {
+  return req.app.get("io") as SocketServer | undefined;
+}
 
 function toCamel(row: any) {
   return {

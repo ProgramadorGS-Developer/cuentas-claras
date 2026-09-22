@@ -15,7 +15,7 @@ export function RootNavigator() {
   return (
     <Stack.Navigator initialRouteName="JoinSession">
       <Stack.Screen name="JoinSession" component={JoinSessionScreen} options={{ headerShown: false }} />
-      <Stack.Screen name="EnterName" component={EnterNameScreen} options={{ title: "¿Cómo te llamás?" }} />
+      <Stack.Screen name="EnterName" component={EnterNameScreen} options={{ headerShown: false }} />
       <Stack.Screen name="Tabs" component={AppTabs} options={{ headerShown: false }} />
       <Stack.Screen name="ItemDetail" component={ItemDetailScreen} options={{ title: "Ítem" }} />
       <Stack.Screen name="NewSession" component={NewSessionScreen} options={{ headerShown: false }} />
