@@ -1,0 +1,8 @@
+appId: com.cuentasclaras.app
+---
+# Objetivo: La app abre, conecta con Metro y muestra el home sin sesiones
+# Smoke test: la app abre, conecta al dev client de Metro y muestra el home
+# sin sesión activa. Sirve como chequeo rápido de que el resto de los flows
+# puede arrancar (ver mobile/.maestro/README.md).
+- runFlow: ../subflows/abrir-app.yaml
+- assertVisible: "No tenés sesiones activas"

@@ -1,0 +1,13 @@
+appId: com.cuentasclaras.app
+---
+# Objetivo: Dividir una cuenta de $9000 entre 3 personas
+# RF-15: división rápida de una cuenta (ej: restaurante) entre N personas.
+- runFlow: ../subflows/crear-sesion.yaml
+- tapOn: "En la reunión"
+- tapOn: "Total de la cuenta"
+- inputText: "9000"
+- tapOn: "Cantidad de personas"
+- inputText: "3"
+- hideKeyboard
+- tapOn: "Calcular"
+- assertVisible: ".*3\\.000,00 c/u"

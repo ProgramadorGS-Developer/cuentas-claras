@@ -1,0 +1,24 @@
+appId: com.cuentasclaras.app
+---
+# Objetivo: crear la sesión "Test Maestro" con un ítem
+# Crea una sesión "Test Maestro" con anfitrión "Pablo QA" y el ítem sugerido
+# ${ITEM} (default "Carne"). Termina en el Home de la sesión.
+# No usa "Crear e invitar por WhatsApp": abriría WhatsApp y se saldría del flow.
+- runFlow: abrir-app.yaml
+- tapOn: "Crear nueva cuenta"
+- assertVisible: "Nueva sesión"
+- tapOn: "Nombre de la sesión (ej: Asado del sábado)"
+- inputText: "Test Maestro"
+- tapOn: "Tu nombre (anfitrión)"
+- inputText: "Pablo QA"
+- hideKeyboard
+- tapOn: ${ITEM || "Carne"}
+- assertVisible: "Tu lista \\(1\\)"
+# El botón queda debajo de la lista de compras sugerida.
+- scrollUntilVisible:
+    element: "Guardar sesión y agregar gastos"
+    direction: DOWN
+- tapOn: "Guardar sesión y agregar gastos"
+- extendedWaitUntil:
+    visible: "Cada uno pone"
+    timeout: 15000

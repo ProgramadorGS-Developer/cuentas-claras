@@ -1,0 +1,21 @@
+appId: com.cuentasclaras.app
+---
+# Objetivo: Registrar un aporte al presupuesto; un monto inválido se rechaza
+# RF-13: registrar un aporte al presupuesto común; un monto inválido se rechaza.
+- runFlow: ../subflows/crear-sesion.yaml
+- tapOn: "Presupuesto"
+- assertVisible: "Todavía no se cargó ningún aporte."
+- tapOn: "Monto que aportás"
+- inputText: "0"
+- hideKeyboard
+- tapOn: "Registrar aporte"
+- assertVisible: "Ingresá un monto válido \\(mayor a 0\\)."
+- tapOn: "Monto que aportás"
+- eraseText
+- inputText: "2000"
+- hideKeyboard
+- tapOn: "Registrar aporte"
+- extendedWaitUntil:
+    visible: ".*2\\.000,00.*"
+    timeout: 10000
+- assertNotVisible: "Todavía no se cargó ningún aporte."

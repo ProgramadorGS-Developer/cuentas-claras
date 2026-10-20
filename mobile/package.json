@@ -11,7 +11,9 @@
     "eas-build-post-install": "node scripts/prepare-sqlite.js",
     "lint": "eslint . --ext .ts,.tsx",
     "format": "prettier --write \"src/**/*.{ts,tsx}\"",
-    "test": "jest"
+    "test": "jest",
+    "test:e2e": "maestro test .maestro/flows",
+    "test:e2e:reporte": "python3 .maestro/scripts/reporte-pdf.py"
   },
   "dependencies": {
     "@expo/metro-runtime": "~3.2.3",
