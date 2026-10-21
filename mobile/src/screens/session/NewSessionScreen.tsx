@@ -43,7 +43,9 @@ export function NewSessionScreen() {
   const [draftItem, setDraftItem] = useState("");
   const [creating, setCreating] = useState(false);
 
-  const canCreate = sessionName.trim().length > 0 && hostName.trim().length > 0 && !creating;
+  // Mismas reglas que valida el servidor (server/src/utils/validation.ts): si no coinciden, el
+  // POST /sessions responde 400 y la pantalla no muestra nada.
+  const canCreate = sessionName.trim().length > 0 && hostName.trim().length >= 2 && !creating;
 
   function addItem(name: string) {
     const trimmed = name.trim();
@@ -132,6 +134,7 @@ export function NewSessionScreen() {
           <AppTextInput
             variant="underline"
             placeholder="Nombre de la sesión (ej: Asado del sábado)"
+            maxLength={60}
             value={sessionName}
             onChangeText={setSessionName}
             style={styles.field}
@@ -139,6 +142,7 @@ export function NewSessionScreen() {
           <AppTextInput
             variant="underline"
             placeholder="Tu nombre (anfitrión)"
+            maxLength={60}
             value={hostName}
             onChangeText={setHostName}
             style={styles.field}
@@ -152,6 +156,7 @@ export function NewSessionScreen() {
             <AppTextInput
               variant="underline"
               placeholder="Agregar un ítem..."
+              maxLength={80}
               value={draftItem}
               onChangeText={setDraftItem}
               onSubmitEditing={handleAddDraft}

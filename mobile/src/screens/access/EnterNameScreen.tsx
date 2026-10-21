@@ -99,6 +99,7 @@ export function EnterNameScreen({ route, navigation }: Props) {
           </AppText>
           <AppTextInput
             placeholder="Tu nombre"
+            maxLength={60}
             value={name}
             onChangeText={(t) => {
               setName(t);
