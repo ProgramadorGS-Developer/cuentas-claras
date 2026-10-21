@@ -25,7 +25,7 @@ diagrama de casos de uso las acciones comunes a ambos.
 | RF-06 | Un usuario debe poder quitar una reserva propia, dejando el ítem disponible. |
 | RF-07 | La reserva de un ítem es obligatoria antes de poder marcarlo como comprado. |
 | RF-08 | Si dos o más usuarios intentan reservar el mismo ítem casi al mismo tiempo, el sistema otorga la reserva a quien llegó primero al servidor y notifica a los demás que el ítem ya está reservado (y por quién). Ver `12-diseno-concurrencia-de-reserva.md`. |
-| RF-08a | Un usuario puede ofrecerse a comprar un ítem que ya está reservado por otro. El usuario que tiene la reserva recibe un aviso no bloqueante y decide si lo compra igual, cede la reserva al que se ofreció, o libera el ítem. Si no responde, conserva la reserva. |
+| RF-08a | **(Parcialmente implementado — ver `12-diseno-concurrencia-de-reserva.md`: hoy solo se avisa al que pierde la carrera; el ofrecimiento completo es la Fase 2, pendiente.)** Un usuario puede ofrecerse a comprar un ítem que ya está reservado por otro. El usuario que tiene la reserva recibe un aviso no bloqueante y decide si lo compra igual, cede la reserva al que se ofreció, o libera el ítem. Si no responde, conserva la reserva. |
 | RF-09 | Cada ítem tiene un estado: pendiente o comprado, independientemente de si fue reservado. |
 | RF-10 | Cada ítem cuenta con un campo de observaciones (ej: "reservado por Pedro"). |
 | RF-11 | Al marcar un ítem como comprado, se debe poder ingresar el precio pagado. |

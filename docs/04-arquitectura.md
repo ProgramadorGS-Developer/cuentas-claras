@@ -23,7 +23,7 @@ SQLite, cada una con un propósito distinto:**
 │   React Native + Expo    │ ◀───────────────────────────  │   Express + Socket.IO     │
 │                          │                                │                          │
 │   SQLite LOCAL           │                                │   SQLite del SERVIDOR     │
-│   (expo-sqlite)          │                                │   (better-sqlite3)        │
+│   (expo-sqlite)          │                                │   (node:sqlite)           │
 │   = cache offline-first  │                                │   = fuente de verdad      │
 │   de la sesión activa    │                                │   compartida entre todos  │
 └─────────────────────────┘                                └──────────────────────────┘
@@ -73,11 +73,11 @@ contemplaba el modo offline).
 |---|---|---|
 | Runtime | Node.js + TypeScript | Mismo lenguaje que el cliente, reduce el costo cognitivo del equipo. |
 | Framework HTTP | Express | Simple, suficiente para el volumen de endpoints del proyecto. |
-| Base de datos | **SQLite** vía `better-sqlite3` | Requisito del proyecto; motor sincrónico, rápido y sin infraestructura adicional — ideal para un proyecto académico o un MVP de bajo volumen. |
+| Base de datos | **SQLite** vía `node:sqlite` (módulo incluido en Node; antes `better-sqlite3`, reemplazado el 2026-09-01 por una limitación del hosting — ver `11-cambios-para-despliegue.md`) | Requisito del proyecto; motor sincrónico, rápido y sin infraestructura adicional — ideal para un proyecto académico o un MVP de bajo volumen. |
 | Tiempo real | Socket.IO | *Broadcast* de cambios de estado (`item:updated`) y avisos de ofrecimiento (RF-08a). El arbitraje de la reserva (RF-08) se resuelve por REST de forma atómica, no por socket. |
 | Subida de archivos | `multer` | RF-12: recepción de fotos de tickets. |
 
-> **Nota de escalabilidad**: `better-sqlite3` con modo `WAL` soporta
+> **Nota de escalabilidad**: `node:sqlite` con modo `WAL` soporta
 > cómodamente el volumen de un grupo de amigos/familiar (decenas de
 > usuarios concurrentes por sesión). Si el proyecto creciera a miles de
 > sesiones simultáneas, el mismo esquema relacional migra sin cambios de
@@ -101,7 +101,14 @@ contemplaba el modo offline).
 6. Cada app recibe el evento, actualiza su SQLite local (cache) y
    re-renderiza la lista.
 
-Si B igual quiere ese ítem, puede crear un **ofrecimiento**
+> **Estado real de RF-08a (2026-10-20):** el modelo de ofrecimientos que
+> describe el párrafo siguiente **no está implementado** — no existe
+> `POST /items/:itemId/offers` ni los eventos `offer:*`. Lo que hoy hace la
+> app es avisar al que *pierde* la carrera ("Fulano lo reservó justo antes
+> que vos", `ReservationNoticeBanner.tsx`). El ofrecimiento completo es la
+> Fase 2 de `12-diseno-concurrencia-de-reserva.md`, pendiente a propósito.
+
+Si B igual quiere ese ítem, podría crear un **ofrecimiento** (diseño futuro)
 (`POST /items/:itemId/offers`, RF-08a): A recibe `offer:created` como
 aviso no bloqueante y decide comprarlo, cederlo o liberarlo; el resultado
 viaja por `offer:resolved`. Ver `12-diseno-concurrencia-de-reserva.md`.
@@ -142,7 +149,7 @@ presupuesto, y actualizar el balance de resultado.
 
 ```
 [ Celular Usuario A ] ─┐
-[ Celular Usuario B ] ─┼── HTTPS/WSS ──▶ [ Backend Node.js + Socket.IO ] ── SQLite (better-sqlite3)
+[ Celular Usuario B ] ─┼── HTTPS/WSS ──▶ [ Backend Node.js + Socket.IO ] ── SQLite (node:sqlite)
 [ Celular Anfitrión ] ─┘                          │
                                                    └── /uploads (fotos de tickets)
 ```

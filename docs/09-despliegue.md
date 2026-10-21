@@ -34,7 +34,7 @@ Pasos generales:
 
 > **Nota sobre escalar más allá de SQLite**: si el proyecto pasa de
 > "prueba académica" a producción con mucho tráfico concurrente,
-> `better-sqlite3` puede reemplazarse por PostgreSQL sin rediseñar el
+> `node:sqlite` puede reemplazarse por PostgreSQL sin rediseñar el
 > modelo (mismo esquema relacional). El único código que cambiaría es
 > `server/src/db/connection.ts` y las queries de `controllers/`/`services/`
 > (de SQL de SQLite a SQL estándar, prácticamente idéntico en este
