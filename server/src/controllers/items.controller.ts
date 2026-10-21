@@ -50,6 +50,8 @@ export const itemsController = {
     const result = releaseItem(itemId, participantId);
     if (!result.ok) {
       if (result.reason === "not_found") return res.status(404).json({ error: "Ítem no encontrado" });
+      if (result.reason === "already_purchased")
+        return res.status(409).json({ error: "El ítem ya fue comprado y no se puede liberar" });
       return res.status(403).json({ error: "Solo quien tiene la reserva puede liberar el ítem" });
     }
 
