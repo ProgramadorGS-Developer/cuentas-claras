@@ -13,15 +13,19 @@ real entre lo documentado (`docs/02`/`04`) y lo implementado (RF-08a, ver
 `docs/15` §15.2). Cada vez que se agregue o cambie un endpoint, actualizar
 esta tabla en el mismo commit.
 
+Errores generales (`middleware/errorHandler.ts`): un body que no es JSON
+válido responde `400` y un archivo que supera el límite de multer, `413`.
+Las reglas de longitud de los textos están en `server/src/utils/validation.ts`.
+
 ## 16.1 Sesiones (`sessions.routes.ts`, `sessions.controller.ts`)
 
 | Método y ruta | Body / params | Respuesta OK | Errores |
 |---|---|---|---|
-| `POST /sessions` | `{ name, hostName, items: string[] }` | `201 { id, name, hostName, createdAt, closedAt, shareToken, hostId }` | — |
+| `POST /sessions` | `{ name (1–60), hostName (2–60), items?: string[] (c/u hasta 80) }` — se recortan espacios y se descartan ítems vacíos | `201 { id, name, hostName, createdAt, closedAt, shareToken, hostId }` | `400` nombre, anfitrión o ítems inválidos |
 | `GET /sessions` | — | `200 [{ id, name, hostName, createdAt, closedAt, shareToken }]` (todas, sin filtrar) | — |
 | `GET /sessions/by-token/:token` | — | `200` sesión (camelCase) | `404` link inválido/inexistente |
 | `GET /sessions/:sessionId` | — | `200` sesión (`serializeSession`) | `404` no encontrada |
-| `PATCH /sessions/:sessionId` | `{ participantId, name?, items? }` | `200` sesión actualizada | `404` no encontrada · `403` no es anfitrión · `409` ya se unió otro participante o está cerrada (edición solo mientras el anfitrión esté solo) |
+| `PATCH /sessions/:sessionId` | `{ participantId, name?, items? }` (mismas reglas que `POST /sessions`) | `200` sesión actualizada | `400` falta participantId o nombre/ítems inválidos · `404` no encontrada · `403` no es anfitrión · `409` ya se unió otro participante o está cerrada (edición solo mientras el anfitrión esté solo) |
 | `POST /sessions/:sessionId/close` | `{ participantId }` | `200` sesión (`closedAt` seteado) | `404` no encontrada · `403` no es anfitrión · `409` ya estaba cerrada |
 | `GET /sessions/shared/:shareToken/result` | — | `200 { session: {name, hostName, closedAt}, result: SessionResult, deepLink, shareText }` | `404` link inválido — **solo lectura, sin login** (RF-16/CU-04 A1) |
 | `GET /sessions/:sessionId/items` | — | `200 [Item]` | — |
@@ -34,7 +38,7 @@ esta tabla en el mismo commit.
 
 | Método y ruta | Body | Respuesta OK | Errores |
 |---|---|---|---|
-| `POST /sessions/:sessionId/participants` | `{ name }` (mín. 2 caracteres) | `201 { id, sessionId, name, isHost: false, joinedAt }` | `400` nombre faltante/corto · `404` sesión no encontrada · `409` sesión cerrada |
+| `POST /sessions/:sessionId/participants` | `{ name }` (texto de 2 a 60 caracteres) | `201 { id, sessionId, name, isHost: false, joinedAt }` | `400` nombre faltante, no texto, corto o de más de 60 · `404` sesión no encontrada · `409` sesión cerrada |
 | `GET /sessions/:sessionId/participants` | — | `200 [Participant]` (snake_case tal cual la fila de SQLite, sin `toCamel`) | — |
 
 ## 16.3 Ítems (`items.routes.ts`, `items.controller.ts`)
@@ -50,7 +54,7 @@ esta tabla en el mismo commit.
 | `POST /items/:itemId/release` | `{ participantId }` | `200 Item` | `400` falta participantId · `404` no encontrado · `403` solo el titular libera (RF-06) |
 | `POST /items/:itemId/purchase` | `{ participantId, pricePaid }` | `200 Item` (además dispara `broadcastResultUpdated`) | `400` falta participantId o precio inválido · `404` no encontrado · `409` ya comprado / no es el titular (RF-07) |
 | `POST /items/:itemId/ticket` | `{ ticketImageUri }` | `200 { ok: true }` — solo actualiza el campo, sin validar archivo | — |
-| `POST /items/:itemId/ticket-upload` | `multipart/form-data`, campo `ticket` (imagen, máx. 8MB) | `200 { url }` (`/uploads/<archivo>`, servido estático) | `400` falta el archivo |
+| `POST /items/:itemId/ticket-upload` | `multipart/form-data`, campo `ticket` (imagen, máx. 8MB) | `200 { url }` (`/uploads/<archivo>`, servido estático) | `400` falta el archivo · `413` supera 8MB |
 
 `esMontoValido`: número entre 0 y 999999.99 con hasta 2 decimales (0 se acepta a propósito, ver comentario en el controller — un ítem puede "regalarse").
 

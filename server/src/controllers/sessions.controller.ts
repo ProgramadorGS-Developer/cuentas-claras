@@ -14,13 +14,20 @@ import { findSession, updateSession, closeSession, serializeSession } from "../s
 import { broadcastSessionClosed } from "../sockets/broadcast";
 import { computeSessionResult, buildResultShareText } from "../services/balance.service";
 import { renderJoinPage } from "../utils/joinPage";
+import { MAX_ITEM, MAX_NOMBRE, normalizarItems, normalizarNombrePersona, normalizarNombreSesion } from "../utils/validation";
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 // RF-03/RF-04: CRUD de sesiones (EDT 1.1.2.1).
 export const sessionsController = {
   create(req: Request, res: Response) {
-    const { name, hostName, items } = req.body as { name: string; hostName: string; items: string[] };
+    const name = normalizarNombreSesion(req.body?.name);
+    const hostName = normalizarNombrePersona(req.body?.hostName);
+    const items = req.body?.items === undefined ? [] : normalizarItems(req.body.items);
+    if (!name) return res.status(400).json({ error: `El nombre de la sesión es obligatorio (máximo ${MAX_NOMBRE} caracteres)` });
+    if (!hostName) return res.status(400).json({ error: `El nombre del anfitrión debe tener entre 2 y ${MAX_NOMBRE} caracteres` });
+    if (!items) return res.status(400).json({ error: `Los ítems deben ser una lista de textos de hasta ${MAX_ITEM} caracteres` });
+
     const sessionId = uuid();
     const hostId = uuid();
     const now = new Date().toISOString();
@@ -37,7 +44,7 @@ export const sessionsController = {
     const insertItem = db.prepare(
       `INSERT INTO items (id, session_id, name, status, updated_at) VALUES (?, ?, ?, 'pendiente', ?)`,
     );
-    for (const itemName of items ?? []) {
+    for (const itemName of items) {
       insertItem.run(uuid(), sessionId, itemName, now);
     }
 
@@ -111,12 +118,14 @@ export const sessionsController = {
 
   // Solo el anfitrión, y solo mientras nadie más se unió (ver sessions.service.ts).
   update(req: Request, res: Response) {
-    const { participantId, name, items } = req.body as {
-      participantId: string;
-      name?: string;
-      items?: string[];
-    };
+    const { participantId } = req.body as { participantId: string };
     if (!participantId) return res.status(400).json({ error: "Falta participantId" });
+
+    // Mismas reglas que al crear: solo se valida lo que viene (los campos son opcionales).
+    const name = req.body.name === undefined ? undefined : normalizarNombreSesion(req.body.name);
+    const items = req.body.items === undefined ? undefined : normalizarItems(req.body.items);
+    if (name === null) return res.status(400).json({ error: `El nombre de la sesión es obligatorio (máximo ${MAX_NOMBRE} caracteres)` });
+    if (items === null) return res.status(400).json({ error: `Los ítems deben ser una lista de textos de hasta ${MAX_ITEM} caracteres` });
 
     const result = updateSession(req.params.sessionId, participantId, { name, items });
     if (!result.ok) {
