@@ -101,6 +101,23 @@ describe("POST /items/:itemId/release", () => {
     expect(ok.status).toBe(200);
     expect(reservedBy(itemId)).toBeNull();
   });
+
+  // #61: liberar un ítem comprado borraba al pagador y el resultado dejaba de cerrar.
+  it("rechaza liberar un ítem ya comprado (409) y el pagador y el resultado no cambian", async () => {
+    const { sessionId, itemId, participantIds } = seed();
+    const [payer] = participantIds;
+    await request(app).post(`/items/${itemId}/reserve`).send({ participantId: payer });
+    await request(app).post(`/items/${itemId}/purchase`).send({ participantId: payer, pricePaid: 300 });
+
+    const res = await request(app).post(`/items/${itemId}/release`).send({ participantId: payer });
+    expect(res.status).toBe(409);
+    expect(reservedBy(itemId)).toBe(payer);
+
+    const result = await request(app).get(`/sessions/${sessionId}/result`);
+    const nets: number[] = result.body.balances.map((b: { net: number }) => b.net);
+    expect(nets.reduce((s, n) => s + n, 0)).toBe(0);
+    expect(result.body.balances.find((b: { participantId: string }) => b.participantId === payer).net).toBe(150);
+  });
 });
 
 describe("POST /items/:itemId/purchase", () => {

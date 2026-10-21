@@ -75,27 +75,19 @@ El cliente no emite ningún evento propio para reservar/liberar/comprar —
 esas tres acciones son siempre REST. El único uso de sockets del lado
 cliente es unirse a la sala y escuchar estos tres eventos.
 
-### Legado — registrados en el servidor pero sin ningún cliente que los use
+### Eventos cliente → servidor
 
-`server/src/sockets/reservation.handlers.ts` sigue activo (lo llama
-`sockets/index.ts` en cada conexión), pero implementa el diseño **viejo**
-de negociación por cola, reemplazado por el arbitraje atómico REST de
-`docs/12` (Fase 1+3). Nadie en el cliente mobile emite estos eventos hoy:
-
-| Evento | Sentido | Estado |
+| Evento | Payload | Uso |
 |---|---|---|
-| `session:join` | Cliente → servidor | Legado, sin uso |
-| `reserve:attempt` | Cliente → servidor | Legado — reemplazado por `POST /items/:id/reserve` |
-| `reserve:respond` | Cliente → servidor | Legado — el modelo de "insistir/ceder" nunca se completó (Fase 2 de `docs/12`, pendiente) |
-| `item:release` | Cliente → servidor | Legado — reemplazado por `POST /items/:id/release` |
-| `reserve:conflict` | Servidor → cliente (`reservationQueue.service.ts`) | Legado, sin listener |
-| `reserve:granted` | Servidor → cliente (`reservationQueue.service.ts`) | Legado, sin listener |
+| `session:join` | `{ sessionId }` | La app lo emite al entrar a una sesión (`mobile/src/services/realtime/socket.ts`) para unirse a la sala `session:<id>` y recibir los tres eventos de arriba. |
 
-Borrar `reservationQueue.service.ts` y `reservation.handlers.ts` es la
-Fase 4 pendiente de `docs/12` (tarjeta 1.1.3.2 del tablero) — mientras no
-se borre, cualquiera que lea el código de sockets puede confundirse
-pensando que ese mecanismo sigue vigente. Si tocás este código, no le
-agregues features nuevas: es candidato a borrado, no a mantenimiento.
+Los eventos legados `reserve:attempt`, `reserve:respond` e `item:release`
+(y `reserve:conflict` / `reserve:granted`) se eliminaron junto con
+`reservationQueue.service.ts` y `reservation.handlers.ts` (tarjeta #60,
+parte de la Fase 4 de `docs/12`): ningún cliente los usaba y aceptaban
+cualquier `participantId` sin validar titular ni estado, lo que permitía
+borrar o cambiar el pagador de un ítem comprado. Queda pendiente de esa
+fase eliminar la tabla `reservation_attempts` (requiere migración).
 
 ## 16.6 Modelos de dominio compartidos
 
