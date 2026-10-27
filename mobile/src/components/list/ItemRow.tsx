@@ -5,6 +5,7 @@ import { ShoppingItem } from "@/domain/models";
 import { colors } from "@/theme/colors";
 import { spacing } from "@/theme/spacing";
 import { formatCurrency } from "@/utils/formatters";
+import { shadows } from "@/theme/shadows";
 
 interface Props {
   item: ShoppingItem;
@@ -25,7 +26,7 @@ export function ItemRow({ item, participantId, pending, onPress, onReserve, onRe
   const subtitle = isMine ? "Vos lo reservaste" : item.observation;
 
   return (
-    <Pressable onPress={onPress} style={styles.row}>
+    <Pressable onPress={onPress} style={[styles.row, shadows.soft]}>
       <View style={{ flex: 1 }}>
         <AppText variant="bodyBold">{item.name}</AppText>
         {subtitle ? (
@@ -50,11 +51,14 @@ export function ItemRow({ item, participantId, pending, onPress, onReserve, onRe
           style={[styles.actionButton, isFree ? styles.actionReserve : styles.actionRelease]}
         >
           {pending ? (
-            <ActivityIndicator size="small" color={isFree ? "#fff" : colors.primaryDark} />
+            <ActivityIndicator
+              size="small"
+              color={isFree ? colors.onPrimary : colors.primaryDark}
+            />
           ) : (
             <AppText
               variant="caption"
-              style={{ color: isFree ? "#fff" : colors.primaryDark, fontWeight: "700" }}
+              style={{ color: isFree ? colors.onPrimary : colors.primaryDark, fontWeight: "700" }}
             >
               {isFree ? "Reservar" : "Liberar"}
             </AppText>
@@ -66,13 +70,16 @@ export function ItemRow({ item, participantId, pending, onPress, onReserve, onRe
 }
 
 const styles = StyleSheet.create({
+  // Tarjeta (igual que las filas del Historial) sobre el fondo de la pantalla, en vez de una fila
+  // blanca de borde a borde: separa mejor cada ítem sin necesitar líneas divisorias.
   row: {
     flexDirection: "row",
     alignItems: "center",
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
+    backgroundColor: colors.background,
+    borderRadius: 18,
+    padding: spacing.md,
+    marginHorizontal: spacing.lg,
+    marginBottom: spacing.sm,
     gap: spacing.sm,
   },
   muted: { color: colors.textMuted, marginBottom: 2 },

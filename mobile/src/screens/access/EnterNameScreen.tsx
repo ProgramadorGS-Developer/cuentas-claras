@@ -8,6 +8,7 @@ import { AppTextInput } from "@/components/common/AppTextInput";
 import { AppButton } from "@/components/common/AppButton";
 import { AppHeader } from "@/components/common/AppHeader";
 import { colors } from "@/theme/colors";
+import { shadows } from "@/theme/shadows";
 import { spacing } from "@/theme/spacing";
 import { isNonEmptyName } from "@/utils/validators";
 import { useUserStore } from "@/store/userStore";
@@ -88,39 +89,43 @@ export function EnterNameScreen({ route, navigation }: Props) {
         keyboardVerticalOffset={Platform.OS === "ios" ? 80 : 0}
       >
         <View style={styles.container}>
-          <AppText variant="h2" style={{ marginBottom: spacing.md }}>
-            ¿Cómo te llamás?
-          </AppText>
-          <AppText
-            variant="caption"
-            style={{ color: colors.textMuted, marginBottom: spacing.lg, textAlign: "center" }}
-          >
-            Con eso alcanza para identificarte en la sesión, nada más.
-          </AppText>
-          <AppTextInput
-            placeholder="Tu nombre"
-            value={name}
-            onChangeText={(t) => {
-              setName(t);
-              setError(null);
-            }}
-            style={{ marginBottom: spacing.md, width: "100%" }}
-            autoFocus
-            autoCapitalize="words"
-            returnKeyType="done"
-            onSubmitEditing={handleContinue}
-            editable={!loading}
-          />
-          {error ? (
-            <AppText variant="caption" style={{ color: colors.danger, marginBottom: spacing.sm }}>
-              {error}
+          <View style={[styles.card, shadows.card]}>
+            <AppText variant="h2" style={{ marginBottom: spacing.md }}>
+              ¿Cómo te llamás?
             </AppText>
-          ) : null}
-          <AppButton
-            label={loading ? "Ingresando..." : "Continuar"}
-            onPress={handleContinue}
-            disabled={loading}
-          />
+            <AppText
+              variant="caption"
+              style={{ color: colors.textMuted, marginBottom: spacing.lg, textAlign: "center" }}
+            >
+              Con eso alcanza para identificarte en la sesión, nada más.
+            </AppText>
+            <AppTextInput
+              placeholder="Tu nombre"
+              value={name}
+              onChangeText={(t) => {
+                setName(t);
+                setError(null);
+              }}
+              style={{ marginBottom: spacing.md, width: "100%" }}
+              autoFocus
+              autoCapitalize="words"
+              returnKeyType="done"
+              onSubmitEditing={handleContinue}
+              editable={!loading}
+            />
+            {error ? (
+              <AppText variant="caption" style={{ color: colors.danger, marginBottom: spacing.sm }}>
+                {error}
+              </AppText>
+            ) : null}
+            <View style={{ width: "100%" }}>
+              <AppButton
+                label={loading ? "Ingresando..." : "Continuar"}
+                onPress={handleContinue}
+                disabled={loading}
+              />
+            </View>
+          </View>
         </View>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -128,6 +133,14 @@ export function EnterNameScreen({ route, navigation }: Props) {
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: colors.background },
+  screen: { flex: 1, backgroundColor: colors.screenBg },
   container: { flex: 1, alignItems: "center", justifyContent: "center", padding: spacing.lg },
+  card: {
+    width: "100%",
+    maxWidth: 420,
+    alignItems: "center",
+    backgroundColor: colors.background,
+    borderRadius: 22,
+    padding: spacing.lg,
+  },
 });

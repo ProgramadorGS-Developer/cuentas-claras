@@ -1,8 +1,9 @@
 import { useEffect } from "react";
-import { Platform, Pressable, StyleSheet, View } from "react-native";
+import { Pressable, StyleSheet, View } from "react-native";
 import { AppText } from "@/components/common/AppText";
 import { CloseIcon } from "@/components/icons/LineIcons";
 import { colors } from "@/theme/colors";
+import { shadows } from "@/theme/shadows";
 import { spacing } from "@/theme/spacing";
 import { ReservationNotice } from "@/hooks/useReservation";
 
@@ -10,17 +11,6 @@ interface Props {
   notice: ReservationNotice | null;
   onDismiss: () => void;
 }
-
-const cardShadow = Platform.select({
-  web: { boxShadow: "0 10px 24px rgba(0,0,0,0.12)" },
-  default: {
-    shadowColor: "#000",
-    shadowOpacity: 0.12,
-    shadowRadius: 14,
-    shadowOffset: { width: 0, height: 6 },
-    elevation: 4,
-  },
-});
 
 // RF-08 / EDT 1.2.2.4: aviso de que otro participante llegó primero a reservar.
 // A diferencia del modal viejo (insistir/ceder), esto NO bloquea la pantalla: el arbitraje
@@ -37,7 +27,7 @@ export function ReservationNoticeBanner({ notice, onDismiss }: Props) {
 
   return (
     <View style={styles.wrap} pointerEvents="box-none">
-      <View style={[styles.banner, cardShadow]}>
+      <View style={[styles.banner, shadows.floating]}>
         <AppText style={styles.emoji}>😅</AppText>
         <View style={{ flex: 1 }}>
           <AppText variant="bodyBold" numberOfLines={1}>

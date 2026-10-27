@@ -3,6 +3,7 @@ import { AppText } from "@/components/common/AppText";
 import { StatusPill } from "@/components/common/StatusPill";
 import { ReceiptIcon } from "@/components/icons/LineIcons";
 import { colors } from "@/theme/colors";
+import { shadows } from "@/theme/shadows";
 import { spacing } from "@/theme/spacing";
 import { useNavigation } from "@react-navigation/native";
 import { formatCurrency, formatDateTime } from "@/utils/formatters";
@@ -24,7 +25,7 @@ export function SessionHistoryScreen() {
         contentContainerStyle={styles.listContent}
         renderItem={({ item }) => (
           <Pressable
-            style={styles.card}
+            style={[styles.card, shadows.soft]}
             onPress={() => goToSession(navigation, item.session.id, item.session)}
           >
             <View style={styles.iconBubble}>
@@ -45,9 +46,14 @@ export function SessionHistoryScreen() {
         )}
         ListEmptyComponent={
           !loading ? (
-            <AppText variant="caption" style={styles.empty}>
-              Todavía no hay sesiones para mostrar.
-            </AppText>
+            <View style={styles.emptyWrap}>
+              <View style={styles.emptyIcon}>
+                <ReceiptIcon size={22} color={colors.primaryDark} />
+              </View>
+              <AppText variant="caption" style={styles.empty}>
+                Todavía no hay sesiones para mostrar.
+              </AppText>
+            </View>
           ) : null
         }
       />
@@ -56,12 +62,12 @@ export function SessionHistoryScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background },
+  container: { flex: 1 },
   listContent: { padding: spacing.lg },
   card: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: colors.surface,
+    backgroundColor: colors.background,
     borderRadius: 16,
     padding: spacing.md,
     marginBottom: spacing.sm,
@@ -77,5 +83,14 @@ const styles = StyleSheet.create({
   },
   info: { flex: 1, gap: 4 },
   muted: { color: colors.textMuted },
-  empty: { textAlign: "center", marginTop: spacing.xl, color: colors.textMuted },
+  emptyWrap: { alignItems: "center", marginTop: spacing.xl, gap: spacing.sm },
+  emptyIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 14,
+    backgroundColor: colors.tintGreen,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  empty: { textAlign: "center", color: colors.textMuted },
 });

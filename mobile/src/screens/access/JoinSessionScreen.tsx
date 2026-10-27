@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Platform, Pressable, ScrollView, StyleSheet, View } from "react-native";
+import { Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useNavigation } from "@react-navigation/native";
@@ -18,6 +18,7 @@ import {
   UsersIcon,
 } from "@/components/icons/LineIcons";
 import { colors } from "@/theme/colors";
+import { shadows } from "@/theme/shadows";
 import { spacing } from "@/theme/spacing";
 import { sessionApi } from "@/services/api/sessionApi";
 import { useHomeDashboard, SessionSummary } from "@/hooks/useHomeDashboard";
@@ -25,17 +26,6 @@ import { goToSession } from "@/navigation/goToSession";
 import { formatCurrency } from "@/utils/formatters";
 
 type Props = NativeStackScreenProps<RootStackParamList, "JoinSession">;
-
-const cardShadow = Platform.select({
-  web: { boxShadow: "0 12px 28px rgba(16,24,40,0.08)" },
-  default: {
-    shadowColor: "#0F172A",
-    shadowOpacity: 0.08,
-    shadowRadius: 18,
-    shadowOffset: { width: 0, height: 8 },
-    elevation: 4,
-  },
-});
 
 // CU-01: punto de entrada. Cuando llega un token de invitación por WhatsApp, se auto-une (A1/A2
 // manejan error o piden nombre). Sin token, esta pantalla actúa como Home: refleja si el
@@ -59,7 +49,9 @@ export function JoinSessionScreen({ route, navigation }: Props) {
       navigation.replace("EnterName", { sessionId: session.id, session });
     } catch (e) {
       // A1 (CU-01): link inválido o sesión cerrada/vencida.
-      setJoinError("Este link ya no es válido. Puede que la sesión haya sido cerrada o haya vencido.");
+      setJoinError(
+        "Este link ya no es válido. Puede que la sesión haya sido cerrada o haya vencido.",
+      );
     } finally {
       setLoading(false);
     }
@@ -93,7 +85,7 @@ function HomeDashboard() {
       <AppHeader />
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        <View style={[styles.heroCard, cardShadow]}>
+        <View style={[styles.heroCard, shadows.card]}>
           {active ? <ActiveSessionHero summary={active} /> : <EmptyStateHero />}
         </View>
 
@@ -102,10 +94,7 @@ function HomeDashboard() {
             Cuentas recientes
           </AppText>
           {recent.length > 0 && (
-            <Pressable
-              style={styles.seeAllLink}
-              onPress={() => navigation.navigate("History")}
-            >
+            <Pressable style={styles.seeAllLink} onPress={() => navigation.navigate("History")}>
               <AppText variant="caption" style={styles.seeAllText}>
                 Ver todas
               </AppText>
@@ -119,16 +108,16 @@ function HomeDashboard() {
             Todavía no hay cuentas anteriores.
           </AppText>
         ) : (
-          recent.slice(0, 2).map((summary) => (
-            <RecentSessionCard key={summary.session.id} summary={summary} />
-          ))
+          recent
+            .slice(0, 2)
+            .map((summary) => <RecentSessionCard key={summary.session.id} summary={summary} />)
         )}
       </ScrollView>
 
       <View style={styles.ctaArea}>
         <AppButton
           label="Crear nueva cuenta"
-          icon={<PlusIcon size={18} color="#fff" />}
+          icon={<PlusIcon size={18} color={colors.onPrimary} />}
           onPress={() => navigation.navigate("NewSession")}
         />
       </View>
@@ -198,7 +187,7 @@ function ActiveSessionHero({ summary }: { summary: SessionSummary }) {
           <AppText variant="caption" style={styles.detailButtonText}>
             Ver detalle
           </AppText>
-          <ChevronRightIcon size={16} color="#fff" />
+          <ChevronRightIcon size={16} color={colors.onPrimary} />
         </Pressable>
       </View>
 
@@ -206,13 +195,13 @@ function ActiveSessionHero({ summary }: { summary: SessionSummary }) {
         <QuickAction
           label="Historial"
           tint={colors.tintBlue}
-          icon={<ClockIcon size={22} color="#2E5C9A" />}
+          icon={<ClockIcon size={22} color={colors.onTintBlue} />}
           onPress={() => navigation.navigate("History")}
         />
         <QuickAction
           label="Configuración"
           tint={colors.tintPurple}
-          icon={<SettingsIcon size={22} color="#6A4FA0" />}
+          icon={<SettingsIcon size={22} color={colors.onTintPurple} />}
           onPress={() => navigation.navigate("Settings")}
         />
       </View>
@@ -224,7 +213,7 @@ function RecentSessionCard({ summary }: { summary: SessionSummary }) {
   const navigation = useNavigation<any>();
   return (
     <Pressable
-      style={[styles.recentCard, cardShadow]}
+      style={[styles.recentCard, shadows.card]}
       onPress={() => goToSession(navigation, summary.session.id, summary.session)}
     >
       <View style={styles.recentTopRow}>
@@ -265,7 +254,7 @@ function RecentSessionCard({ summary }: { summary: SessionSummary }) {
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: "#F4F6F5" },
+  screen: { flex: 1, backgroundColor: colors.screenBg },
   loadingScreen: {
     flex: 1,
     alignItems: "center",
@@ -320,7 +309,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     gap: 2,
   },
-  detailButtonText: { color: "#fff", fontWeight: "700" },
+  detailButtonText: { color: colors.onPrimary, fontWeight: "700" },
 
   sectionHeaderRow: {
     flexDirection: "row",
@@ -352,6 +341,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.sm,
     paddingBottom: spacing.md,
-    backgroundColor: "#F4F6F5",
+    backgroundColor: colors.screenBg,
   },
 });

@@ -7,7 +7,6 @@ import { useShoppingList } from "@/hooks/useShoppingList";
 import { useReservation } from "@/hooks/useReservation";
 import { useNavigation } from "@react-navigation/native";
 import { AppText } from "@/components/common/AppText";
-import { colors } from "@/theme/colors";
 import { spacing } from "@/theme/spacing";
 
 // RF-05..RF-11 / CU-02 / CU-02a: pantalla principal de la sesión de compra.
@@ -33,7 +32,7 @@ export function ShoppingListScreen() {
             onRelease={release}
           />
         )}
-        contentContainerStyle={items.length === 0 ? styles.emptyContent : undefined}
+        contentContainerStyle={items.length === 0 ? styles.emptyContent : styles.listContent}
         ListEmptyComponent={
           <View style={styles.emptyState}>
             <AppText style={styles.emptyEmoji}>🛒</AppText>
@@ -49,7 +48,9 @@ export function ShoppingListScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, paddingTop: spacing.sm, backgroundColor: colors.background },
+  // Sin fondo propio: hereda el de las pestañas (colors.screenBg) para que las tarjetas se despeguen.
+  container: { flex: 1 },
+  listContent: { paddingTop: spacing.sm, paddingBottom: spacing.lg },
   emptyContent: { flex: 1 },
   emptyState: { flex: 1, alignItems: "center", justifyContent: "center", padding: spacing.xl },
   emptyEmoji: { fontSize: 36, marginBottom: spacing.sm },

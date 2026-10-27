@@ -16,7 +16,7 @@ export function ItemStatusBadge({ status }: { status: ItemStatus }) {
     >
       <AppText
         variant="caption"
-        style={{ color: isPurchased ? colors.primaryDark : "#B45F06", fontWeight: "700" }}
+        style={{ color: isPurchased ? colors.primaryDark : colors.onTintOrange, fontWeight: "700" }}
       >
         {isPurchased ? "Comprado" : "Pendiente"}
       </AppText>
