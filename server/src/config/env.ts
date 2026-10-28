@@ -11,5 +11,5 @@ export const config = {
   // esta variable y listo, sin reenviar mensajes.
   apkUrl:
     process.env.APK_URL ??
-    "https://expo.dev/artifacts/eas/qYxXhUegOCvZRX7JxOj396bLVAuG2v8rQxOvH9pTaUU.apk",
+    "https://expo.dev/artifacts/eas/pzEUL-WNKXprJWd_ecR-wcA7IZSF8dtFi9LISH6g3Go.apk",
 };
