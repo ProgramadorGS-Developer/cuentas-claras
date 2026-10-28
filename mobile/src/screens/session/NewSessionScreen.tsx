@@ -18,6 +18,7 @@ import { useUserStore } from "@/store/userStore";
 import { useSessionStore } from "@/store/sessionStore";
 import { useNavigation } from "@react-navigation/native";
 import { shareSessionLinkViaWhatsApp } from "@/services/whatsapp/shareLink";
+import { isNonEmptyName, MAX_ITEM, MAX_NOMBRE } from "@/utils/validators";
 
 // Sugerencias genéricas de compra grupal: no atadas a un solo tipo de evento (asado),
 // para que sirvan también en previas, viajes u otras juntadas.
@@ -44,7 +45,9 @@ export function NewSessionScreen() {
   const [draftItem, setDraftItem] = useState("");
   const [creating, setCreating] = useState(false);
 
-  const canCreate = sessionName.trim().length > 0 && hostName.trim().length > 0 && !creating;
+  // Mismas reglas que valida el servidor (server/src/utils/validation.ts): si no coinciden, el
+  // POST /sessions responde 400 y la pantalla no muestra nada.
+  const canCreate = sessionName.trim().length > 0 && isNonEmptyName(hostName) && !creating;
 
   function addItem(name: string) {
     const trimmed = name.trim();
@@ -133,6 +136,7 @@ export function NewSessionScreen() {
           <AppTextInput
             variant="underline"
             placeholder="Nombre de la sesión (ej: Asado del sábado)"
+            maxLength={MAX_NOMBRE}
             value={sessionName}
             onChangeText={setSessionName}
             style={styles.field}
@@ -140,6 +144,7 @@ export function NewSessionScreen() {
           <AppTextInput
             variant="underline"
             placeholder="Tu nombre (anfitrión)"
+            maxLength={MAX_NOMBRE}
             value={hostName}
             onChangeText={setHostName}
             style={styles.field}
@@ -153,6 +158,7 @@ export function NewSessionScreen() {
             <AppTextInput
               variant="underline"
               placeholder="Agregar un ítem..."
+              maxLength={MAX_ITEM}
               value={draftItem}
               onChangeText={setDraftItem}
               onSubmitEditing={handleAddDraft}

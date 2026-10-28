@@ -10,7 +10,7 @@ import { AppHeader } from "@/components/common/AppHeader";
 import { colors } from "@/theme/colors";
 import { shadows } from "@/theme/shadows";
 import { spacing } from "@/theme/spacing";
-import { isNonEmptyName } from "@/utils/validators";
+import { isNonEmptyName, MAX_NOMBRE } from "@/utils/validators";
 import { useUserStore } from "@/store/userStore";
 import { useSessionStore } from "@/store/sessionStore";
 import { userRepository } from "@/database/repositories/userRepository";
@@ -101,6 +101,7 @@ export function EnterNameScreen({ route, navigation }: Props) {
             </AppText>
             <AppTextInput
               placeholder="Tu nombre"
+              maxLength={MAX_NOMBRE}
               value={name}
               onChangeText={(t) => {
                 setName(t);
