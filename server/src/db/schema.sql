@@ -35,15 +35,6 @@ CREATE TABLE IF NOT EXISTS items (
   updated_at TEXT NOT NULL
 );
 
--- RF-08 / CU-02a: cola de intentos de reserva para arbitrar conflictos por orden de llegada.
-CREATE TABLE IF NOT EXISTS reservation_attempts (
-  id TEXT PRIMARY KEY,
-  item_id TEXT NOT NULL REFERENCES items(id),
-  participant_id TEXT NOT NULL REFERENCES participants(id),
-  requested_at TEXT NOT NULL,
-  resolved INTEGER NOT NULL DEFAULT 0
-);
-
 CREATE TABLE IF NOT EXISTS budget_contributions (
   id TEXT PRIMARY KEY,
   session_id TEXT NOT NULL REFERENCES sessions(id),
@@ -56,5 +47,9 @@ CREATE TABLE IF NOT EXISTS budget_contributions (
 
 CREATE INDEX IF NOT EXISTS idx_items_session ON items(session_id);
 CREATE INDEX IF NOT EXISTS idx_participants_session ON participants(session_id);
-CREATE INDEX IF NOT EXISTS idx_reservation_item ON reservation_attempts(item_id);
 CREATE INDEX IF NOT EXISTS idx_budget_contributions_session ON budget_contributions(session_id);
+
+-- Fase 4 de docs/12: la cola de reservas (reservation_attempts) se eliminó; el arbitraje es
+-- atómico por REST (reserveItem). Esto limpia las bases ya creadas; es idempotente y también
+-- borra su índice.
+DROP TABLE IF EXISTS reservation_attempts;
