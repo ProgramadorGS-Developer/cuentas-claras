@@ -1,0 +1,21 @@
+appId: com.cuentasclaras.app
+---
+# Objetivo: abrir la app y conectar con Metro
+# Abre la app con estado limpio y la conecta al bundle de Metro (dev client).
+# El deep link solo registra el servidor en el launcher del dev client; hay que
+# tocarlo para que cargue el bundle de la app.
+- launchApp:
+    clearState: true
+- openLink: "cuentasclaras://expo-development-client/?url=http%3A%2F%2Flocalhost%3A8081"
+- tapOn: "http://localhost:8081"
+# Con clearState el dev client cree que es el primer arranque y, apenas termina
+# de cargar el bundle, abre su menú de desarrollo encima de la app (modal: tapa
+# la jerarquía y Maestro no ve los textos de abajo). Se espera a que aparezca
+# —la primera compilación de Metro en frío puede tardar >60s— y se cierra.
+- extendedWaitUntil:
+    visible: "Go home"
+    timeout: 180000
+- pressKey: Back
+- extendedWaitUntil:
+    visible: "Crear nueva cuenta"
+    timeout: 30000

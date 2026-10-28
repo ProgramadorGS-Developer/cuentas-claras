@@ -26,8 +26,22 @@ recomendado de lectura:
 | 6 | [Estructura de carpetas](./docs/06-estructura-de-carpetas.md) | Recorrido guiado del árbol de `mobile/` y `server/`, y cómo instalarlo/correrlo. |
 | 7 | [Guía de implementación por fases](./docs/07-guia-de-implementacion.md) | Roadmap de construcción en 5 fases, mapeado al EDT y cronograma originales. |
 | 8 | [Plan de pruebas](./docs/08-plan-de-pruebas.md) | Unitarias, integración, prueba de estrés de concurrencia y checklist de aceptación. |
-| 9 | [Despliegue](./docs/09-despliegue.md) | Cómo publicar el backend y generar el `.apk`/`.ipa` con EAS Build. |
+| 9 | [Despliegue](./docs/09-despliegue.md) | Opciones recomendadas de hosting en general (Railway/Render/VPS) — para lo que el proyecto usa **de verdad**, ver el documento 17. |
 | 10 | [Manuales de usuario](./docs/10-manuales-de-usuario.md) | Guía rápida para el Anfitrión y para Participantes, en lenguaje llano. |
+| 11 | [Cambios para el despliegue real](./docs/11-cambios-para-despliegue.md) | Los 4 cambios de código que hizo falta hacer para desplegar de verdad en MonsterASP.net (motivo y alternativas descartadas de cada uno). |
+| 12 | [Diseño de concurrencia de reserva](./docs/12-diseno-concurrencia-de-reserva.md) | Rediseño del arbitraje de RF-08/RF-08a: por qué se reemplazó la negociación por cola por un arbitraje atómico instantáneo. |
+| 13 | [Reporte de pruebas de estrés](./docs/13-reporte-pruebas-estres.md) | Resultado de la prueba de concurrencia con 12/50/100 usuarios simultáneos. |
+| 14 | [Auditoría: backend hardcodeado](./docs/14-auditoria-backend-produccion.md) | Historial del hallazgo "la URL del backend está fija y el servidor real quedó desactualizado". |
+| 15 | [Estado actual del proyecto](./docs/15-estado-actual-del-proyecto.md) | Auditoría completa (código, git, tablero, backend en vivo) — el diagnóstico más reciente de dónde está parado el proyecto. |
+| 16 | [**Referencia de API**](./docs/16-referencia-api.md) | Todos los endpoints REST y eventos de Socket.IO en un solo lugar, con sus respuestas y errores. |
+| 17 | [**Runbook de despliegue real**](./docs/17-runbook-despliegue.md) | Cómo se despliega de verdad hoy (MonsterASP + EAS), paso a paso — reemplaza en la práctica al documento 9. |
+| 18 | [Trazabilidad de requisitos](./docs/18-trazabilidad-requisitos.md) | Cada RF/RNF: dónde está implementado, qué test lo cubre, si está realmente terminado. |
+| 19 | [Problemas conocidos y soluciones](./docs/19-problemas-conocidos-y-soluciones.md) | FAQ técnico: cada bug/gotcha real que ya pisamos, con su causa y su solución. |
+| 20 | [**Tutorial de inicio rápido**](./docs/20-tutorial-inicio-rapido.md) | Levantar el proyecto y probarlo de punta a punta hoy mismo, sin leer los otros 19 documentos primero. |
+| 21 | [Acta de aceptación final](./docs/21-acta-aceptacion-final.md) | Veredicto de cumplimiento de cada requisito, listo para firma del equipo. |
+| 22 | [Informe de lecciones aprendidas](./docs/22-informe-lecciones-aprendidas.md) | Qué costó más de lo esperado y por qué, para no repetirlo. |
+
+> Documentos superseded/históricos (no desactualizarlos activamente, pero no son la fuente de verdad): `docs/analisis-concurrencia-reserva.txt` (reemplazado por el 12), `docs/tablero-trello-cuentasclaras.md`. El zip `cuentas-claras-rn.zip` en la carpeta padre del repo es el scaffold del primer día (2026-08-18) — histórico, no documentación vigente.
 
 ## Resumen de la arquitectura
 
@@ -75,17 +89,23 @@ npx expo start           # escanear el QR con la app Expo Go
 Más detalle en [`docs/06-estructura-de-carpetas.md`](./docs/06-estructura-de-carpetas.md)
 y en [`docs/07-guia-de-implementacion.md`](./docs/07-guia-de-implementacion.md).
 
-## Estado del scaffold
+## Estado actual (2026-09-29)
 
-Este repositorio incluye la **estructura completa de carpetas y archivos**
-siguiendo buenas prácticas de React Native (navegación, pantallas,
-componentes, capa de datos SQLite, servicios de red/tiempo real, estado
-global, tema visual) con el código base de cada pieza ya escrito y
-comentado con referencias a los requisitos (`RF-XX`) y casos de uso
-(`CU-XX`) que implementa. Los `TODO` puntuales que quedan (ej. refrescar
-listas tras una acción, reemplazar mocks por datos reales de sesión) están
-señalados directamente en el código, y el orden sugerido para completarlos
-está en la guía de implementación por fases.
+Los 16 requisitos funcionales están implementados y probados (server
+57/57 tests, `tsc --noEmit` limpio en ambos proyectos) — detalle
+requisito por requisito en
+[`docs/18-trazabilidad-requisitos.md`](./docs/18-trazabilidad-requisitos.md)
+y veredicto formal en
+[`docs/21-acta-aceptacion-final.md`](./docs/21-acta-aceptacion-final.md).
+El backend está desplegado y en uso real en
+`https://cuentasclaras.runasp.net` (WebSocket verificado el 2026-10-20).
+Antes de dar el sistema por entregado quedan: un build de EAS corrido de
+punta a punta, backups de la base de producción y confirmar la
+persistencia de las fotos de tickets — ver
+[`docs/21-acta-aceptacion-final.md`](./docs/21-acta-aceptacion-final.md)
+§21.2.
+
+Para levantarlo y probarlo hoy mismo: [`docs/20-tutorial-inicio-rapido.md`](./docs/20-tutorial-inicio-rapido.md).
 
 ## Origen del proyecto
 

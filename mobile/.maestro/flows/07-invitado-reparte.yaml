@@ -1,0 +1,64 @@
+appId: com.cuentasclaras.app
+---
+# Objetivo: Un invitado entra por link, ve en tiempo real la compra del anfitrión y el resultado reparte entre los dos
+# CU-01 + CU-02/03 en tiempo real + CU-04 con 2 participantes. El celular es el
+# invitado; el anfitrión ("Ana") se simula contra la API del server local
+# (scripts/), porque no hay un segundo dispositivo.
+# Esperado (sin presupuesto, se reparte en partes iguales): gasto total 4000,
+# 2000 c/u -> Ana gastó 3000 (recibe 1000), Pablo QA gastó 1000 (paga 1000).
+- runScript:
+    file: ../scripts/anfitrion.js
+    env:
+      ACCION: crear-sesion
+- runFlow: ../subflows/abrir-app.yaml
+- openLink: "cuentasclaras://join?token=${output.shareToken}"
+- extendedWaitUntil:
+    visible: "¿Cómo te llamás?"
+    timeout: 15000
+- tapOn: "Tu nombre"
+- inputText: "Pablo QA"
+- hideKeyboard
+- tapOn: "Continuar"
+- extendedWaitUntil:
+    visible: "Lista"
+    timeout: 15000
+- tapOn: "Lista"
+- assertVisible: "Carne"
+- assertVisible: "Pan"
+- assertVisible: "Hielo"
+- assertNotVisible: "Reservado por Ana"
+# Ana compra la Carne desde "su" celular: el invitado tiene que verlo sin recargar.
+- runScript:
+    file: ../scripts/anfitrion.js
+    env:
+      ACCION: comprar
+      ITEM: Carne
+      PRECIO: "3000"
+- extendedWaitUntil:
+    visible: "Reservado por Ana"
+    timeout: 10000
+- extendedWaitUntil:
+    visible: ".*3\\.000,00.*"
+    timeout: 10000
+# El invitado compra el Pan.
+- tapOn: "Pan"
+- tapOn: "Reservar"
+- extendedWaitUntil:
+    visible: "Precio pagado"
+    timeout: 10000
+- tapOn: "Precio pagado"
+- inputText: "1000"
+- hideKeyboard
+- tapOn: "Marcar como comprado"
+- extendedWaitUntil:
+    notVisible: "Marcar como comprado"
+    timeout: 10000
+- pressKey: Back
+- tapOn: "Resultado"
+- extendedWaitUntil:
+    visible: "Ana"
+    timeout: 10000
+- assertVisible: "Pablo QA"
+- assertVisible: "Nadie cargó Presupuesto: el gasto se repartió en partes iguales."
+- assertVisible: "Debe recibir .*1\\.000,00"
+- assertVisible: "Debe pagar .*1\\.000,00"

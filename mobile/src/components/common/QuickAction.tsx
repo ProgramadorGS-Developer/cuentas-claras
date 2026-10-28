@@ -1,19 +1,9 @@
-import { Platform, Pressable, StyleSheet, View } from "react-native";
+import { Pressable, StyleSheet, View } from "react-native";
 import { AppText } from "./AppText";
 import { colors } from "@/theme/colors";
+import { shadows } from "@/theme/shadows";
 import { spacing } from "@/theme/spacing";
 import { ReactNode } from "react";
-
-const bubbleShadow = Platform.select({
-  web: { boxShadow: "0 4px 10px rgba(0,0,0,0.05)" },
-  default: {
-    shadowColor: "#000",
-    shadowOpacity: 0.05,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 3 },
-    elevation: 1,
-  },
-});
 
 interface Props {
   label: string;
@@ -30,7 +20,7 @@ export function QuickAction({ label, tint, icon, onPress }: Props) {
       onPress={onPress}
       style={({ pressed }) => [styles.wrap, { opacity: pressed ? 0.7 : 1 }]}
     >
-      <View style={[styles.bubble, { backgroundColor: tint }, bubbleShadow]}>{icon}</View>
+      <View style={[styles.bubble, { backgroundColor: tint }, shadows.soft]}>{icon}</View>
       <AppText variant="caption" style={styles.label}>
         {label}
       </AppText>

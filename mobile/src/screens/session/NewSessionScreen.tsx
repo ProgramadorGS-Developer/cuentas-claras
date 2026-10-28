@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Platform, Pressable, ScrollView, StyleSheet, View } from "react-native";
+import { Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { AppText } from "@/components/common/AppText";
 import { AppTextInput } from "@/components/common/AppTextInput";
@@ -7,6 +7,7 @@ import { AppButton } from "@/components/common/AppButton";
 import { AppHeader } from "@/components/common/AppHeader";
 import { CloseIcon, PlusIcon, SendIcon } from "@/components/icons/LineIcons";
 import { colors } from "@/theme/colors";
+import { shadows } from "@/theme/shadows";
 import { spacing } from "@/theme/spacing";
 import { sessionApi } from "@/services/api/sessionApi";
 import { itemApi } from "@/services/api/itemApi";
@@ -17,6 +18,7 @@ import { useUserStore } from "@/store/userStore";
 import { useSessionStore } from "@/store/sessionStore";
 import { useNavigation } from "@react-navigation/native";
 import { shareSessionLinkViaWhatsApp } from "@/services/whatsapp/shareLink";
+import { isNonEmptyName, MAX_ITEM, MAX_NOMBRE } from "@/utils/validators";
 
 // Sugerencias genéricas de compra grupal: no atadas a un solo tipo de evento (asado),
 // para que sirvan también en previas, viajes u otras juntadas.
@@ -43,7 +45,9 @@ export function NewSessionScreen() {
   const [draftItem, setDraftItem] = useState("");
   const [creating, setCreating] = useState(false);
 
-  const canCreate = sessionName.trim().length > 0 && hostName.trim().length > 0 && !creating;
+  // Mismas reglas que valida el servidor (server/src/utils/validation.ts): si no coinciden, el
+  // POST /sessions responde 400 y la pantalla no muestra nada.
+  const canCreate = sessionName.trim().length > 0 && isNonEmptyName(hostName) && !creating;
 
   function addItem(name: string) {
     const trimmed = name.trim();
@@ -132,6 +136,7 @@ export function NewSessionScreen() {
           <AppTextInput
             variant="underline"
             placeholder="Nombre de la sesión (ej: Asado del sábado)"
+            maxLength={MAX_NOMBRE}
             value={sessionName}
             onChangeText={setSessionName}
             style={styles.field}
@@ -139,6 +144,7 @@ export function NewSessionScreen() {
           <AppTextInput
             variant="underline"
             placeholder="Tu nombre (anfitrión)"
+            maxLength={MAX_NOMBRE}
             value={hostName}
             onChangeText={setHostName}
             style={styles.field}
@@ -152,6 +158,7 @@ export function NewSessionScreen() {
             <AppTextInput
               variant="underline"
               placeholder="Agregar un ítem..."
+              maxLength={MAX_ITEM}
               value={draftItem}
               onChangeText={setDraftItem}
               onSubmitEditing={handleAddDraft}
@@ -163,7 +170,7 @@ export function NewSessionScreen() {
               onPress={handleAddDraft}
               hitSlop={8}
             >
-              <PlusIcon size={18} color="#fff" />
+              <PlusIcon size={18} color={colors.onPrimary} />
             </Pressable>
           </View>
 
@@ -214,7 +221,7 @@ export function NewSessionScreen() {
         <View style={styles.actions}>
           <AppButton
             label="Crear e invitar por WhatsApp"
-            icon={<SendIcon size={18} color="#fff" />}
+            icon={<SendIcon size={18} color={colors.onPrimary} />}
             onPress={() => handleCreate(true)}
             disabled={!canCreate}
           />
@@ -231,25 +238,14 @@ export function NewSessionScreen() {
   );
 }
 
-const cardShadow = Platform.select({
-  web: { boxShadow: "0 12px 28px rgba(16,24,40,0.06)" },
-  default: {
-    shadowColor: "#0F172A",
-    shadowOpacity: 0.06,
-    shadowRadius: 16,
-    shadowOffset: { width: 0, height: 6 },
-    elevation: 2,
-  },
-});
-
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: "#F4F6F5" },
+  screen: { flex: 1, backgroundColor: colors.screenBg },
   scrollContent: { padding: spacing.lg, paddingBottom: spacing.xl },
   card: {
     backgroundColor: colors.surface,
     borderRadius: 22,
     padding: spacing.lg,
-    ...cardShadow,
+    ...shadows.card,
   },
   title: { marginBottom: spacing.md },
   field: { marginBottom: spacing.md },
@@ -279,7 +275,7 @@ const styles = StyleSheet.create({
   },
   chipSelected: { backgroundColor: colors.primary, borderColor: colors.primary },
   chipText: { color: colors.text },
-  chipTextSelected: { color: "#fff", fontWeight: "700" },
+  chipTextSelected: { color: colors.onPrimary, fontWeight: "700" },
   itemsList: { marginTop: spacing.lg },
   itemsCount: { color: colors.textMuted, marginBottom: spacing.xs },
   itemRow: {

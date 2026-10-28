@@ -1,0 +1,7 @@
+appId: com.cuentasclaras.app
+---
+# Objetivo: El anfitrión crea una sesión nueva y llega al Home de esa sesión
+# CU (Anfitrión): crear una sesión nueva desde cero y llegar al Home de esa sesión.
+- runFlow: ../subflows/crear-sesion.yaml
+- assertVisible: "Test Maestro"
+- assertVisible: "Cada uno pone"

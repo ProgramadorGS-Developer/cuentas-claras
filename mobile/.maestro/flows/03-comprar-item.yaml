@@ -1,0 +1,26 @@
+appId: com.cuentasclaras.app
+---
+# Objetivo: Reservar un ítem, marcarlo comprado con precio y verlo en el Resultado
+# CU-02 + CU-03 + CU-04: el anfitrión reserva un ítem de la lista, lo marca
+# como comprado con su precio y el gasto aparece en el Resultado.
+- runFlow: ../subflows/crear-sesion.yaml
+- tapOn: "Lista"
+- assertVisible: "Carne"
+- tapOn: "Reservar"
+- extendedWaitUntil:
+    visible: "Vos lo reservaste"
+    timeout: 10000
+- tapOn: "Carne"
+- tapOn: "Precio pagado"
+- inputText: "1500"
+- hideKeyboard
+- tapOn: "Marcar como comprado"
+# Al comprar, el detalle oculta los controles de reserva (ya no está "pendiente").
+- extendedWaitUntil:
+    notVisible: "Marcar como comprado"
+    timeout: 10000
+- pressKey: Back
+- assertVisible: ".*1\\.500,00.*"
+- tapOn: "Resultado"
+- assertVisible: "Pablo QA"
+- assertVisible: ".*Gastó.*1\\.500,00.*"

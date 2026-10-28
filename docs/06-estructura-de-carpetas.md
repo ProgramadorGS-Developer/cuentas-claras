@@ -61,7 +61,7 @@ cuentas-claras/
         ├── index.ts               Arranque del servidor HTTP + Socket.IO
         ├── app.ts                 Configuración de Express (middlewares, rutas)
         ├── config/                Variables de entorno
-        ├── db/                    Conexión SQLite (better-sqlite3) + schema.sql + migraciones
+        ├── db/                    Conexión SQLite (node:sqlite) + schema.sql + migraciones
         ├── routes/                Definición de endpoints REST, agrupados por recurso
         ├── controllers/           Lógica de cada endpoint (una función por acción)
         ├── services/              Reglas de negocio reutilizables:

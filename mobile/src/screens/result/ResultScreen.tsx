@@ -5,6 +5,7 @@ import { ActivityIndicator, Alert, FlatList, StyleSheet, View } from "react-nati
 import { AppButton } from "@/components/common/AppButton";
 import { AppText } from "@/components/common/AppText";
 import { BalanceCard } from "@/components/result/BalanceCard";
+import { SendIcon, SwapIcon } from "@/components/icons/LineIcons";
 import { BalanceEntry } from "@/domain/models";
 import { useSessionResult } from "@/hooks/useSessionResult";
 import { TabsParamList } from "@/navigation/types";
@@ -91,25 +92,34 @@ export function ResultScreen() {
         data={balances}
         keyExtractor={(b) => b.participantId}
         renderItem={({ item }) => <BalanceCard entry={item} />}
+        contentContainerStyle={styles.list}
         ListHeaderComponent={
           <View style={{ marginBottom: spacing.md }}>
             <AppText variant="h2">Resultado</AppText>
             {noBudgetLoaded && (
-              <AppText variant="caption" style={{ color: colors.textMuted, marginTop: spacing.xs }}>
-                Nadie cargó Presupuesto: el gasto se repartió en partes iguales.
-              </AppText>
+              <View style={styles.infoBanner}>
+                <AppText variant="caption" style={styles.infoText}>
+                  Nadie cargó Presupuesto: el gasto se repartió en partes iguales.
+                </AppText>
+              </View>
             )}
           </View>
         }
         ListEmptyComponent={
-          <AppText variant="caption" style={{ color: colors.textMuted }}>
-            Todavía no hay nada para mostrar en esta sesión.
-          </AppText>
+          <View style={styles.empty}>
+            <View style={styles.emptyIcon}>
+              <SwapIcon size={22} color={colors.onTintBlue} />
+            </View>
+            <AppText variant="caption" style={{ color: colors.textMuted }}>
+              Todavía no hay nada para mostrar en esta sesión.
+            </AppText>
+          </View>
         }
       />
       {!viewingShared && (
         <AppButton
           label={sharing ? "Compartiendo..." : "Compartir resultado"}
+          icon={<SendIcon size={18} color={colors.onPrimary} />}
           onPress={handleShare}
           disabled={sharing || !session}
         />
@@ -121,4 +131,23 @@ export function ResultScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, padding: spacing.lg },
   centered: { justifyContent: "center", alignItems: "center" },
+  list: { paddingBottom: spacing.md },
+  infoBanner: {
+    alignSelf: "flex-start",
+    backgroundColor: colors.tintBlue,
+    borderRadius: 14,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    marginTop: spacing.sm,
+  },
+  infoText: { color: colors.onTintBlue },
+  empty: { alignItems: "center", paddingVertical: spacing.xl, gap: spacing.sm },
+  emptyIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 14,
+    backgroundColor: colors.tintBlue,
+    alignItems: "center",
+    justifyContent: "center",
+  },
 });

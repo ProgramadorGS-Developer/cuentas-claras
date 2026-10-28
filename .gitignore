@@ -27,3 +27,6 @@ server/src/uploads/*
 # Sistema
 .DS_Store
 *.log
+
+# Reportes E2E generados (npm run test:e2e:reporte)
+reportes-e2e/

@@ -7,7 +7,9 @@ import { ReactNode } from "react";
 interface Props {
   label: string;
   onPress: () => void;
-  variant?: "primary" | "secondary" | "danger" | "info";
+  // "outline": acción secundaria (borde verde, sin relleno) para que no compita con la
+  // principal cuando conviven varias en una pantalla (ej. Liberar / Cámara / Galería).
+  variant?: "primary" | "secondary" | "danger" | "info" | "outline";
   disabled?: boolean;
   icon?: ReactNode;
 }
@@ -21,7 +23,7 @@ const VARIANT_COLORS = {
 
 // Botón único reutilizado en toda la app: mantiene consistencia visual (buena práctica de UI kit propio).
 export function AppButton({ label, onPress, variant = "primary", disabled, icon }: Props) {
-  const bg = VARIANT_COLORS[variant];
+  const isOutline = variant === "outline";
 
   return (
     <Pressable
@@ -29,11 +31,15 @@ export function AppButton({ label, onPress, variant = "primary", disabled, icon 
       disabled={disabled}
       style={({ pressed }) => [
         styles.base,
-        { backgroundColor: bg, opacity: disabled ? 0.5 : pressed ? 0.85 : 1 },
+        isOutline ? styles.outline : { backgroundColor: VARIANT_COLORS[variant] },
+        { opacity: disabled ? 0.5 : pressed ? 0.85 : 1 },
       ]}
     >
       {icon ? <View style={styles.icon}>{icon}</View> : null}
-      <AppText variant="button" style={{ color: "#fff" }}>
+      <AppText
+        variant="button"
+        style={{ color: isOutline ? colors.primaryDark : colors.onPrimary }}
+      >
         {label}
       </AppText>
     </Pressable>
@@ -49,6 +55,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     minHeight: 52, // touch target grande, apto para uso "en movimiento" (RNF-04)
+  },
+  outline: {
+    backgroundColor: colors.background,
+    borderWidth: 1.5,
+    borderColor: colors.primary,
   },
   icon: { marginRight: spacing.sm },
 });

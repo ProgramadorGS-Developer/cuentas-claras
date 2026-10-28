@@ -29,7 +29,8 @@ export type ReserveResult =
 export type ReleaseResult =
   | { ok: true; item: ItemRow }
   | { ok: false; reason: "not_found" }
-  | { ok: false; reason: "not_holder" };
+  | { ok: false; reason: "not_holder" }
+  | { ok: false; reason: "already_purchased" };
 
 export type PurchaseResult =
   | { ok: true; item: ItemRow }
@@ -88,10 +89,20 @@ export function releaseItem(itemId: string, participantId: string): ReleaseResul
   const item = findItem(itemId);
   if (!item) return { ok: false, reason: "not_found" };
   if (item.reserved_by !== participantId) return { ok: false, reason: "not_holder" }; // RF-06: solo el titular libera
+  // Una vez comprado, reserved_by pasa a ser quien pagó: liberarlo dejaría el gasto sin dueño en el balance (#61).
+  if (item.status !== "pendiente") return { ok: false, reason: "already_purchased" };
 
-  db.prepare(
-    "UPDATE items SET reserved_by = NULL, observation = NULL, updated_at = ? WHERE id = ? AND reserved_by = ?",
-  ).run(new Date().toISOString(), itemId, participantId);
+  const result = db
+    .prepare(
+      "UPDATE items SET reserved_by = NULL, observation = NULL, updated_at = ? WHERE id = ? AND reserved_by = ? AND status = 'pendiente'",
+    )
+    .run(new Date().toISOString(), itemId, participantId);
+  if (rowsAffected(result) !== 1) {
+    // Algo cambió entre el SELECT y el UPDATE (se compró o ya se liberó): se informa el estado real.
+    const current = findItem(itemId);
+    if (current && current.status !== "pendiente") return { ok: false, reason: "already_purchased" };
+    return { ok: false, reason: "not_holder" };
+  }
 
   return { ok: true, item: findItem(itemId)! };
 }

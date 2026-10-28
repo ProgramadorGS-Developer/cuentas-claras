@@ -1,0 +1,17 @@
+appId: com.cuentasclaras.app
+---
+# Objetivo: Un precio no positivo se rechaza y el ítem sigue pendiente
+# CU-03 A2: un precio no positivo se rechaza y el ítem sigue pendiente.
+- runFlow: ../subflows/crear-sesion.yaml
+- tapOn: "Lista"
+- tapOn: "Reservar"
+- extendedWaitUntil:
+    visible: "Vos lo reservaste"
+    timeout: 10000
+- tapOn: "Carne"
+- tapOn: "Precio pagado"
+- inputText: "0"
+- hideKeyboard
+- tapOn: "Marcar como comprado"
+- assertVisible: "Ingresá un precio válido \\(mayor a 0\\)."
+- assertVisible: "Marcar como comprado"

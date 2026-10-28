@@ -6,7 +6,7 @@ export type StatusPillVariant = "active" | "pending" | "closed";
 
 const VARIANTS: Record<StatusPillVariant, { bg: string; fg: string }> = {
   active: { bg: colors.tintGreen, fg: colors.primaryDark },
-  pending: { bg: colors.tintOrange, fg: "#B45F06" },
+  pending: { bg: colors.tintOrange, fg: colors.onTintOrange },
   closed: { bg: colors.surface, fg: colors.textMuted },
 };
 
