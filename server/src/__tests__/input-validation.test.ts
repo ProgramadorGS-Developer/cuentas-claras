@@ -101,10 +101,10 @@ describe("errores generales", () => {
     expect(res.status).toBe(400);
   });
 
-  it("un archivo de más de 8 MB responde 413, no 500", async () => {
+  it("un archivo de más de 2 MB responde 413, no 500", async () => {
     const res = await request(app)
       .post(`/items/${uuid()}/ticket-upload`)
-      .attach("ticket", Buffer.alloc(8 * 1024 * 1024 + 1), "ticket.jpg");
+      .attach("ticket", Buffer.alloc(2 * 1024 * 1024 + 1), { filename: "ticket.webp", contentType: "image/webp" });
     expect(res.status).toBe(413);
   });
 });
